@@ -2,13 +2,34 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Interactive German Research Tree</title>
+<title>Interactive Germany Research Tree</title>
 <style>
     body {
         margin: 0;
         background-color: #111;
         color: #ddd;
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    #nav-buttons {
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        z-index: 2000;
+        display: flex;
+        gap: 10px;
+    }
+    .nav-btn {
+        padding: 10px 20px;
+        color: white;
+        text-decoration: none;
+        border-radius: 5px;
+        font-weight: bold;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.5);
+        transition: transform 0.1s, box-shadow 0.1s;
+    }
+    .nav-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 10px rgba(0,0,0,0.8);
     }
     #tree-container {
         position: relative;
@@ -32,16 +53,16 @@
     
     .overlay-badges {
         position: absolute;
-        top: 4px;
-        right: 4px;
+        top: -10px;
+        right: -22px;
         display: flex;
         flex-direction: column;
         gap: 4px;
         pointer-events: none;
     }
     .overlay-badge {
-        width: 20px;
-        height: 20px;
+        width: 30px;
+        height: 30px;
         border-radius: 3px;
         background: rgba(0,0,0,0.8);
         border: 1px solid #555;
@@ -136,6 +157,11 @@
 </style>
 </head>
 <body>
+
+<div id="nav-buttons">
+    <a href="index.html" class="nav-btn" style="background: #555; border: 2px solid #fff;">Germany</a>
+    <a href="soviet_tree.html" class="nav-btn" style="background: #5c1111; border: 2px solid #555;">USSR</a>
+</div>
 
 <div id="tree-container">
     <img src="german_research.jpg" id="bg-image">
@@ -8422,6 +8448,7 @@
     };
 
     function getSquad(name) {
+        if (!name) return null;
         if (squadsData[name]) return squadsData[name];
         
         let match = squadsData['single_' + name];
@@ -8451,7 +8478,6 @@
         
         overlay.title = node.text;
 
-        // Check for special traits to add badges
         const squad = getSquad(node.text);
         if (squad) {
             const badgesDiv = document.createElement('div');
@@ -8507,6 +8533,18 @@
         return 'icons_split/smg.png'; 
     }
 
+    function formatTier(tierStr) {
+        if (!tierStr) return '-';
+        if (tierStr === 'civilian') return '0';
+        const m = tierStr.match(/tier(d+)/);
+        if (m) {
+            const num = parseInt(m[1]);
+            const roman = ['I', 'II', 'III', 'IV', 'V'];
+            return roman[num - 1] || num;
+        }
+        return tierStr;
+    }
+
     function openSquadDetails(textKey) {
         const squad = getSquad(textKey);
         
@@ -8525,7 +8563,6 @@
         // Start Table Construction
         html += `<table><thead><tr><th class="row-header">Property</th>`;
         
-        // Headers: Icons
         squad.units.forEach(u => {
             let iconSrc = getIconUrl(u.icon);
             html += `<th><img src="${iconSrc}" class="icon-img" title="${u.icon}"></th>`;
@@ -8542,7 +8579,7 @@
         // Row 2: Tier
         html += `<tr><td class="row-header">Tier</td>`;
         squad.units.forEach(u => {
-            html += `<td>${u.tier}</td>`;
+            html += `<td>${formatTier(u.tier)}</td>`;
         });
         html += `</tr>`;
 
