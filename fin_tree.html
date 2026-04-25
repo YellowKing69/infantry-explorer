@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Interactive Finland Research Tree</title>
+<style>
+    body {
+        margin: 0;
+        background-color: #111;
+        color: #ddd;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    #nav-buttons {
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        z-index: 2000;
+        display: flex;
+        gap: 10px;
+    }
+    .nav-btn {
+        padding: 10px 20px;
+        color: white;
+        text-decoration: none;
+        border-radius: 5px;
+        font-weight: bold;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.5);
+        transition: transform 0.1s, box-shadow 0.1s;
+    }
+    .nav-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 10px rgba(0,0,0,0.8);
+    }
+    #tree-container {
+        position: relative;
+        display: inline-block;
+        user-select: none; 
+    }
+    #bg-image {
+        display: block;
+    }
+    .node-overlay {
+        position: absolute;
+        cursor: pointer;
+        transition: background-color 0.2s, box-shadow 0.2s;
+        border-radius: 4px;
+        background-color: transparent;
+    }
+    .node-overlay:hover {
+        background-color: rgba(255, 255, 255, 0.15);
+        box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+    }
+    
+    .overlay-badges {
+        position: absolute;
+        top: -15px;
+        right: -25px;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        pointer-events: none;
+    }
+    .overlay-badge {
+        width: 30px;
+        height: 30px;
+        border-radius: 1px;
+        background: rgba(0,0,0,0.8);
+        border: 1px solid #555;
+        object-fit: contain;
+    }
+    .badge-text {
+        color: gold;
+        font-size: 16px;
+        line-height: 20px;
+        text-align: center;
+        font-weight: bold;
+        box-sizing: border-box;
+    }
+    
+    /* Modal Styles */
+    #modal-overlay {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0, 0, 0, 0.8);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+        backdrop-filter: blur(4px);
+    }
+    #modal-overlay.active {
+        display: flex;
+    }
+    #modal-box {
+        background: #222;
+        border: 1px solid #444;
+        border-radius: 8px;
+        padding: 20px;
+        max-width: 90%;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+        position: relative;
+    }
+    #close-btn {
+        position: absolute;
+        top: 10px; right: 15px;
+        background: #d32f2f;
+        color: white;
+        border: none;
+        border-radius: 2px;
+        padding: 2px 2px;
+        cursor: pointer;
+        font-weight: bold;
+    }
+    #close-btn:hover { background: #b71c1c; }
+    
+    h2 { margin-top: 0; color: #fff; border-bottom: 1px solid #555; padding-bottom: 10px; }
+    
+    table {
+        border-collapse: collapse;
+        width: 100%;
+        margin-top: 15px;
+        font-size: 14px;
+    }
+    th, td {
+        border: 1px solid #555;
+        padding: 8px 12px;
+        text-align: center;
+        vertical-align: middle;
+    }
+    th {
+        background: #333;
+        color: #fff;
+        position: sticky;
+        top: 0;
+    }
+    tr:nth-child(even) { background: #2a2a2a; }
+    tr:hover { background: #3a3a3a; }
+    
+    .row-header {
+        background: #333;
+        font-weight: bold;
+        color: #fff;
+        text-align: left;
+        width: 140px;
+    }
+    
+    .skills-list { text-align: left; margin: 0; padding-left: 15px; font-size: 12px; }
+    .perks-list { text-align: left; margin: 0; padding-left: 15px; font-size: 12px; color: #4caf50; }
+    .motorized-badge { display: inline-block; background: #1565c0; color: white; padding: 3px 6px; border-radius: 4px; font-size: 12px; margin-left: 10px; vertical-align: middle; }
+    
+    .icon-img {
+        max-height: 40px;
+        border-radius: 4px;
+    }
+    .weapon-name {
+        font-size: 11px;
+        color: #aaa;
+        display: block;
+        margin-top: 4px;
+    }
+</style>
+</head>
+<body>
+
+<div id="nav-buttons">
+    
+        <a href="index.html" class="nav-btn" style="background: #333; border: 2px solid #555;">Germany</a>
+        <a href="soviet_tree.html" class="nav-btn" style="background: #333; border: 2px solid #555;">USSR</a>
+        <a href="fin_tree.html" class="nav-btn" style="background: #3252a8; border: 2px solid #fff;">Finland</a>
+    
+</div>
+
+<div id="tree-container">
+    <img src="finnish_research.jpg" id="bg-image">
+</div>
+
+<div id="modal-overlay">
+    <div id="modal-box">
+        <button id="close-btn">Close</button>
+        <div id="modal-content"></div>
+    </div>
+</div>
+
+<script>
+    const manualData = {
+    "nation": "Germany",
+    "total_nodes": 64,
+    "nodes": [
+        {
+            "x": 63,
+            "y": 387,
+            "width": 108,
+            "height": 136,
+            "text": "single_officer"
+        },
+        {
+            "x": 356,
+            "y": 384,
+            "width": 108,
+            "height": 136,
+            "text": "team_officer_con"
+        },
+        {
+            "x": 635,
+            "y": 383,
+            "width": 115,
+            "height": 160,
+            "text": "squad_officer_con"
+        },
+        {
+            "x": 58,
+            "y": 1020,
+            "width": 114,
+            "height": 177,
+            "text": "single_at"
+        },
+        {
+            "x": 780,
+            "y": 1019,
+            "width": 108,
+            "height": 181,
+            "text": "single_at_pzs_late_con"
+        },
+        {
+            "x": 1070,
+            "y": 1019,
+            "width": 106,
+            "height": 178,
+            "text": "squad_antitank_late_con"
+        },
+        {
+            "x": 203,
+            "y": 1709,
+            "width": 109,
+            "height": 164,
+            "text": "single_ap_miner"
+        },
+        {
+            "x": 350,
+            "y": 1707,
+            "width": 109,
+            "height": 169,
+            "text": "single_at_miner"
+        },
+        {
+            "x": 635,
+            "y": 1707,
+            "width": 119,
+            "height": 176,
+            "text": "squad_eng_flame_con"
+        },
+        {
+            "x": 53,
+            "y": 1876,
+            "width": 120,
+            "height": 180,
+            "text": "single_engineer"
+        },
+        {
+            "x": 208,
+            "y": 1883,
+            "width": 106,
+            "height": 176,
+            "text": "single_flamer"
+        },
+        {
+            "x": 496,
+            "y": 1887,
+            "width": 104,
+            "height": 155,
+            "text": "squad_engineer_mid_con"
+        },
+        {
+            "x": 350,
+            "y": 2054,
+            "width": 108,
+            "height": 166,
+            "text": "squad_heavy_engineer_mid_con"
+        },
+        {
+            "x": 60,
+            "y": 2401,
+            "width": 104,
+            "height": 162,
+            "text": "white_death_con"
+        },
+        {
+            "x": 206,
+            "y": 2400,
+            "width": 106,
+            "height": 154,
+            "text": "squad_jag_scout_late_con"
+        },
+        {
+            "x": 350,
+            "y": 2399,
+            "width": 104,
+            "height": 154,
+            "text": "squad_sissi_mid_con"
+        },
+        {
+            "x": 638,
+            "y": 2402,
+            "width": 108,
+            "height": 146,
+            "text": "squad_hq_lr_pio_mid_con"
+        },
+        {
+            "x": 782,
+            "y": 2398,
+            "width": 105,
+            "height": 171,
+            "text": "squad_hq_lr_jag_mid_con"
+        },
+        {
+            "x": 1067,
+            "y": 2404,
+            "width": 109,
+            "height": 164,
+            "text": "squad_hq_lr_pio_late_con"
+        },
+        {
+            "x": 1209,
+            "y": 2400,
+            "width": 127,
+            "height": 163,
+            "text": "squad_hq_lr_jag_late_con"
+        },
+        {
+            "x": 207,
+            "y": 2574,
+            "width": 104,
+            "height": 159,
+            "text": "squad_vet_scout_mid_con"
+        },
+        {
+            "x": 349,
+            "y": 2572,
+            "width": 108,
+            "height": 161,
+            "text": "squad_light_scout_mid_con"
+        },
+        {
+            "x": 637,
+            "y": 2572,
+            "width": 107,
+            "height": 164,
+            "text": "squad_hq_lr_mid_con"
+        },
+        {
+            "x": 1070,
+            "y": 2573,
+            "width": 106,
+            "height": 153,
+            "text": "squad_hq_lr_late_con"
+        },
+        {
+            "x": 1500,
+            "y": 2570,
+            "width": 108,
+            "height": 171,
+            "text": "squad_jag_strike_mid_con"
+        },
+        {
+            "x": 1931,
+            "y": 2573,
+            "width": 110,
+            "height": 164,
+            "text": "squad_jag_strike_late_con"
+        },
+        {
+            "x": 58,
+            "y": 2745,
+            "width": 114,
+            "height": 166,
+            "text": "single_sniper"
+        },
+        {
+            "x": 639,
+            "y": 2752,
+            "width": 106,
+            "height": 156,
+            "text": "squad_hq_lr_recon_mid_con"
+        },
+        {
+            "x": 1067,
+            "y": 2746,
+            "width": 107,
+            "height": 150,
+            "text": "squad_hq_lr_recon_late_con"
+        },
+        {
+            "x": 1360,
+            "y": 2747,
+            "width": 103,
+            "height": 159,
+            "text": "squad_vet_jag_mid_con"
+        },
+        {
+            "x": 1789,
+            "y": 2742,
+            "width": 111,
+            "height": 166,
+            "text": "squad_vet_jag_late_con"
+        },
+        {
+            "x": 204,
+            "y": 2916,
+            "width": 109,
+            "height": 156,
+            "text": "squad_scout_mid_con"
+        },
+        {
+            "x": 1212,
+            "y": 2916,
+            "width": 108,
+            "height": 151,
+            "text": "squad_jag_mid_con"
+        },
+        {
+            "x": 1644,
+            "y": 2920,
+            "width": 108,
+            "height": 155,
+            "text": "squad_jag_late_con"
+        },
+        {
+            "x": 1785,
+            "y": 2921,
+            "width": 110,
+            "height": 149,
+            "text": "squad_jag_at_late_con"
+        },
+        {
+            "x": 57,
+            "y": 3088,
+            "width": 116,
+            "height": 162,
+            "text": "squad_military_police_early_con"
+        },
+        {
+            "x": 925,
+            "y": 3088,
+            "width": 110,
+            "height": 152,
+            "text": "squad_marksmen_mid_con"
+        },
+        {
+            "x": 1066,
+            "y": 3089,
+            "width": 111,
+            "height": 147,
+            "text": "squad_elite_rifle_mid_con"
+        },
+        {
+            "x": 1502,
+            "y": 3086,
+            "width": 108,
+            "height": 149,
+            "text": "squad_elite_rifle_late_con"
+        },
+        {
+            "x": 1788,
+            "y": 3090,
+            "width": 110,
+            "height": 150,
+            "text": "squad_arm_jag_late_mot_con"
+        },
+        {
+            "x": 56,
+            "y": 3260,
+            "width": 118,
+            "height": 152,
+            "text": "squad_reserves_mid_con"
+        },
+        {
+            "x": 780,
+            "y": 3260,
+            "width": 106,
+            "height": 154,
+            "text": "squad_penal_mid_con"
+        },
+        {
+            "x": 921,
+            "y": 3258,
+            "width": 116,
+            "height": 171,
+            "text": "squad_vet_rifle_mid_con"
+        },
+        {
+            "x": 1359,
+            "y": 3261,
+            "width": 108,
+            "height": 157,
+            "text": "squad_vet_rifle_late_con"
+        },
+        {
+            "x": 1791,
+            "y": 3258,
+            "width": 108,
+            "height": 152,
+            "text": "squad_arm_pio_late_mot_con"
+        },
+        {
+            "x": 65,
+            "y": 3430,
+            "width": 110,
+            "height": 156,
+            "text": "squad_fortress_rifle_early_con"
+        },
+        {
+            "x": 203,
+            "y": 3433,
+            "width": 112,
+            "height": 152,
+            "text": "squad_rifle_early_con"
+        },
+        {
+            "x": 349,
+            "y": 3434,
+            "width": 109,
+            "height": 153,
+            "text": "squad_rifle_lmg_early_con"
+        },
+        {
+            "x": 775,
+            "y": 3432,
+            "width": 120,
+            "height": 150,
+            "text": "squad_rifle_mid_con"
+        },
+        {
+            "x": 922,
+            "y": 3427,
+            "width": 120,
+            "height": 150,
+            "text": "squad_assault_mid_con"
+        },
+        {
+            "x": 1213,
+            "y": 3431,
+            "width": 108,
+            "height": 162,
+            "text": "squad_rifle_late_dp_con"
+        },
+        {
+            "x": 1348,
+            "y": 3431,
+            "width": 120,
+            "height": 150,
+            "text": "squad_rifle_late_dt_con"
+        },
+        {
+            "x": 1499,
+            "y": 3442,
+            "width": 120,
+            "height": 150,
+            "text": "squad_at_late_con"
+        },
+        {
+            "x": 54,
+            "y": 3599,
+            "width": 114,
+            "height": 168,
+            "text": "squad_civil_guard_early_con"
+        },
+        {
+            "x": 491,
+            "y": 3603,
+            "width": 110,
+            "height": 158,
+            "text": "squad_border_guard_early_con"
+        },
+        {
+            "x": 921,
+            "y": 3601,
+            "width": 120,
+            "height": 150,
+            "text": "squad_border_jag_mid_con"
+        },
+        {
+            "x": 1352,
+            "y": 3602,
+            "width": 120,
+            "height": 166,
+            "text": "squad_border_jag_late_con"
+        },
+        {
+            "x": 1495,
+            "y": 3600,
+            "width": 120,
+            "height": 166,
+            "text": "squad_border_jag_at_late_con"
+        },
+        {
+            "x": 774,
+            "y": 3779,
+            "width": 120,
+            "height": 150,
+            "text": "squad_cav_mid_con"
+        },
+        {
+            "x": 1209,
+            "y": 3772,
+            "width": 120,
+            "height": 150,
+            "text": "squad_cav_late_con"
+        },
+        {
+            "x": 57,
+            "y": 3950,
+            "width": 108,
+            "height": 136,
+            "text": "squad_swe_recon_early_con"
+        },
+        {
+            "x": 204,
+            "y": 3947,
+            "width": 116,
+            "height": 148,
+            "text": "squad_swe_rifle_early_con"
+        },
+        {
+            "x": 342,
+            "y": 3945,
+            "width": 120,
+            "height": 150,
+            "text": "squad_swe_mid_con"
+        },
+        {
+            "x": 487,
+            "y": 3944,
+            "width": 122,
+            "height": 171,
+            "text": "squad_swe_late_con"
+        },
+        {
+            "x": 920,
+            "y": 3944,
+            "width": 120,
+            "height": 150,
+            "text": "squad_hrr_cav_mid_con"
+        },
+        {
+            "x": 1354,
+            "y": 3944,
+            "width": 118,
+            "height": 174,
+            "text": "squad_hrr_cav_late_con"
+        },
+        {
+            "x": 200,
+            "y": 4116,
+            "width": 120,
+            "height": 150,
+            "text": "squad_swe_jag_early_con"
+        },
+        {
+            "x": 775,
+            "y": 4113,
+            "width": 115,
+            "height": 168,
+            "text": "squad_vet_cav_mid_con"
+        },
+        {
+            "x": 1210,
+            "y": 4116,
+            "width": 103,
+            "height": 166,
+            "text": "squad_vet_cav_late_con"
+        },
+        {
+            "x": 920,
+            "y": 4289,
+            "width": 120,
+            "height": 150,
+            "text": "squad_urr_cav_mid_con"
+        },
+        {
+            "x": 1350,
+            "y": 4289,
+            "width": 120,
+            "height": 150,
+            "text": "squad_urr_cav_late_con"
+        },
+        {
+            "y":  59,
+            "text":  "link",
+            "width":  89,
+            "height":  99,
+            "x":  2061
+        }
+		
+
+    ]
+};
+    const squadsData = {"name":"FIN","squads":{"single_officer":{"name":"single_officer","is_motorized":false,"vehicle":null,"units":[{"unit_name":"officer","display_name":"officer [FIN]","icon":"tech","veterancy_level":0,"tier":"III","health_percent":300,"health_regeneration_percent":10,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":4,"pistol":5,"smg":5,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"binocular","smoke_count":0,"entity_count":1}]},"team_officer_con":{"name":"team_officer_con","is_motorized":false,"vehicle":null,"units":[{"unit_name":"squadleader","display_name":"squadleader [FIN]","icon":"rifle","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":4,"pistol":4,"smg":3,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":1},{"unit_name":"officer","display_name":"officer [FIN]","icon":"tech","veterancy_level":0,"tier":"III","health_percent":300,"health_regeneration_percent":10,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":4,"pistol":5,"smg":5,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"binocular","smoke_count":0,"entity_count":1},{"unit_name":"rifleman","display_name":"rifleman [FIN]","icon":"rifle","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":4,"pistol":4,"smg":3,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":2}]},"squad_officer_con":{"name":"squad_officer_con","is_motorized":false,"vehicle":null,"units":[{"unit_name":"squadleader","display_name":"squadleader [FIN]","icon":"rifle","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":4,"pistol":4,"smg":3,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":1},{"unit_name":"officer","display_name":"officer [FIN]","icon":"tech","veterancy_level":0,"tier":"III","health_percent":300,"health_regeneration_percent":10,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":4,"pistol":5,"smg":5,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"binocular","smoke_count":0,"entity_count":1},{"unit_name":"antitank_rifle","display_name":"antitank_rifle [FIN]","icon":"atrifle","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":4,"pistol":4,"smg":3,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"boys_mk1","smoke_count":0,"entity_count":4},{"unit_name":"antitank_asst","display_name":"antitank_asst [FIN]","icon":"rifle","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":4,"pistol":4,"smg":3,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"mosin_m27","smoke_count":0,"entity_count":4}]},"squad_civil_guard_early_con":{"name":"squad_civil_guard_early_con","is_motorized":false,"vehicle":null,"units":[{"unit_name":"civil_guard_sl","display_name":"civil_guard_sl [FIN]","icon":"rifle","veterancy_level":0,"tier":"I","health_percent":150,"health_regeneration_percent":300,"stamina_percent":75,"stamina_regeneration_percent":75,"speed":0.9,"vision_range_m":100,"skills":{"rocketlauncher":2,"rifle":3,"pistol":3,"smg":2,"mgun":2,"mgun_light":2},"special_perks":[],"primary_weapon":"mosin_m27","smoke_count":0,"entity_count":1},{"unit_name":"civil_guard_rifle_helm","display_name":"civil_guard_rifle_helm [FIN]","icon":"rifle","veterancy_level":0,"tier":"I","health_percent":150,"health_regeneration_percent":300,"stamina_percent":75,"stamina_regeneration_percent":75,"speed":0.9,"vision_range_m":100,"skills":{"rocketlauncher":2,"rifle":3,"pistol":3,"smg":2,"mgun":2,"mgun_light":2},"special_perks":[],"primary_weapon":"mosin_m27","smoke_count":0,"entity_count":3},{"unit_name":"civil_guard_rifle","display_name":"civil_guard_rifle [FIN]","icon":"rifle","veterancy_level":0,"tier":"I","health_percent":150,"health_regeneration_percent":300,"stamina_percent":75,"stamina_regeneration_percent":75,"speed":0.9,"vision_range_m":100,"skills":{"rocketlauncher":2,"rifle":3,"pistol":3,"smg":2,"mgun":2,"mgun_light":2},"special_perks":[],"primary_weapon":"mosin","smoke_count":0,"entity_count":5},{"unit_name":"civil_guard_mg","display_name":"civil_guard_mg [FIN]","icon":"mg","veterancy_level":0,"tier":"I","health_percent":150,"health_regeneration_percent":300,"stamina_percent":75,"stamina_regeneration_percent":75,"speed":0.9,"vision_range_m":100,"skills":{"rocketlauncher":2,"rifle":2,"pistol":3,"smg":2,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"madsen","smoke_count":0,"entity_count":1}]},"squad_military_police_early_con":{"name":"squad_military_police_early_con","is_motorized":false,"vehicle":null,"units":[{"unit_name":"mp_off","display_name":"mp_off [FIN]","icon":"smg","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":3,"pistol":4,"smg":4,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"suomi_m31_stick","smoke_count":0,"entity_count":1},{"unit_name":"mp_off_asst","display_name":"mp_off_asst [FIN]","icon":"smg","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":3,"pistol":4,"smg":4,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"suomi_m31_stick","smoke_count":0,"entity_count":1},{"unit_name":"mp_rifle","display_name":"mp_rifle [FIN]","icon":"rifle","veterancy_level":0,"tier":"I","health_percent":150,"health_regeneration_percent":10,"stamina_percent":75,"stamina_regeneration_percent":75,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":2,"rifle":3,"pistol":3,"smg":2,"mgun":2,"mgun_light":2},"special_perks":[],"primary_weapon":"mosin","smoke_count":0,"entity_count":8}]},"squad_fortress_rifle_early_con":{"name":"squad_fortress_rifle_early_con","is_motorized":false,"vehicle":null,"units":[{"unit_name":"fortress_sl","display_name":"fortress_sl [FIN]","icon":"rifle","veterancy_level":0,"tier":"I","health_percent":150,"health_regeneration_percent":300,"stamina_percent":75,"stamina_regeneration_percent":75,"speed":0.9,"vision_range_m":100,"skills":{"rocketlauncher":2,"rifle":3,"pistol":3,"smg":2,"mgun":2,"mgun_light":2},"special_perks":[],"primary_weapon":"mosin_m27","smoke_count":0,"entity_count":1},{"unit_name":"fortress_rifle","display_name":"fortress_rifle [FIN]","icon":"rifle","veterancy_level":0,"tier":"I","health_percent":150,"health_regeneration_percent":300,"stamina_percent":75,"stamina_regeneration_percent":75,"speed":0.9,"vision_range_m":100,"skills":{"rocketlauncher":2,"rifle":3,"pistol":3,"smg":2,"mgun":2,"mgun_light":2},"special_perks":[],"primary_weapon":"mosin_m27","smoke_count":0,"entity_count":3},{"unit_name":"fortress_rifle_mosin","display_name":"fortress_rifle_mosin [FIN]","icon":"rifle","veterancy_level":0,"tier":"I","health_percent":150,"health_regeneration_percent":300,"stamina_percent":75,"stamina_regeneration_percent":75,"speed":0.9,"vision_range_m":100,"skills":{"rocketlauncher":2,"rifle":3,"pistol":3,"smg":2,"mgun":2,"mgun_light":2},"special_perks":[],"primary_weapon":"mosin","smoke_count":0,"entity_count":5}]},"squad_reserves_mid_con":{"name":"squad_reserves_mid_con","is_motorized":false,"vehicle":null,"units":[{"unit_name":"reservist_sl","display_name":"reservist_sl [FIN]","icon":"rifle","veterancy_level":0,"tier":"I","health_percent":150,"health_regeneration_percent":10,"stamina_percent":75,"stamina_regeneration_percent":75,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":2,"rifle":3,"pistol":3,"smg":2,"mgun":2,"mgun_light":2},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":1},{"unit_name":"reservist_rifle_helm","display_name":"reservist_rifle_helm [FIN]","icon":"rifle","veterancy_level":0,"tier":"I","health_percent":150,"health_regeneration_percent":10,"stamina_percent":75,"stamina_regeneration_percent":75,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":2,"rifle":3,"pistol":3,"smg":2,"mgun":2,"mgun_light":2},"special_perks":[],"primary_weapon":"mosin_m27","smoke_count":0,"entity_count":2},{"unit_name":"reservist_rifle","display_name":"reservist_rifle [FIN]","icon":"rifle","veterancy_level":0,"tier":"I","health_percent":150,"health_regeneration_percent":10,"stamina_percent":75,"stamina_regeneration_percent":75,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":2,"rifle":3,"pistol":3,"smg":2,"mgun":2,"mgun_light":2},"special_perks":[],"primary_weapon":"mosin","smoke_count":0,"entity_count":5},{"unit_name":"reservist_mg","display_name":"reservist_mg [FIN]","icon":"mg","veterancy_level":0,"tier":"I","health_percent":150,"health_regeneration_percent":10,"stamina_percent":75,"stamina_regeneration_percent":75,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":2,"rifle":2,"pistol":3,"smg":2,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"chauchat","smoke_count":0,"entity_count":1}]},"squad_scout_mid_con":{"name":"squad_scout_mid_con","is_motorized":false,"vehicle":null,"units":[{"unit_name":"scout_sl","display_name":"scout_sl [FIN]","icon":"smg","veterancy_level":0,"tier":"II","health_percent":150,"health_regeneration_percent":10,"stamina_percent":250,"stamina_regeneration_percent":100,"speed":1.1,"vision_range_m":125,"skills":{"rocketlauncher":3,"rifle":3,"pistol":4,"smg":4,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"suomi_m31_drum","smoke_count":0,"entity_count":1},{"unit_name":"scout","display_name":"scout [FIN]","icon":"rifle","veterancy_level":0,"tier":"II","health_percent":150,"health_regeneration_percent":10,"stamina_percent":250,"stamina_regeneration_percent":100,"speed":1.1,"vision_range_m":125,"skills":{"rocketlauncher":3,"rifle":4,"pistol":4,"smg":3,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":3}]},"squad_rifle_early_con":{"name":"squad_rifle_early_con","is_motorized":false,"vehicle":null,"units":[{"unit_name":"squadleader","display_name":"squadleader [FIN]","icon":"rifle","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":4,"pistol":4,"smg":3,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"mosin_m27","smoke_count":0,"entity_count":1},{"unit_name":"smg_drum","display_name":"smg_drum [FIN]","icon":"smg","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":3,"pistol":4,"smg":4,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"suomi_m31_drum","smoke_count":0,"entity_count":1},{"unit_name":"rifleman","display_name":"rifleman [FIN]","icon":"rifle","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":4,"pistol":4,"smg":3,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"mosin_m27","smoke_count":0,"entity_count":8}]},"squad_rifle_lmg_early_con":{"name":"squad_rifle_lmg_early_con","is_motorized":false,"vehicle":null,"units":[{"unit_name":"squadleader","display_name":"squadleader [FIN]","icon":"rifle","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":4,"pistol":4,"smg":3,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"mosin_m27","smoke_count":0,"entity_count":1},{"unit_name":"rifleman","display_name":"rifleman [FIN]","icon":"rifle","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":4,"pistol":4,"smg":3,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"mosin_m27","smoke_count":0,"entity_count":4},{"unit_name":"mg","display_name":"mg [FIN]","icon":"mg","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":3,"pistol":4,"smg":3,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"m26","smoke_count":0,"entity_count":1},{"unit_name":"mg_asst","display_name":"mg_asst [FIN]","icon":"rifle","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":4,"pistol":4,"smg":3,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"mosin_m27","smoke_count":0,"entity_count":1}]},"squad_rifle_mid_con":{"name":"squad_rifle_mid_con","is_motorized":false,"vehicle":null,"units":[{"unit_name":"squadleader","display_name":"squadleader [FIN]","icon":"rifle","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":4,"pistol":4,"smg":3,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":1},{"unit_name":"smg_drum","display_name":"smg_drum [FIN]","icon":"smg","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":3,"pistol":4,"smg":4,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"suomi_m31_drum","smoke_count":0,"entity_count":1},{"unit_name":"rifleman","display_name":"rifleman [FIN]","icon":"rifle","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":4,"pistol":4,"smg":3,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":5},{"unit_name":"mg","display_name":"mg [FIN]","icon":"mg","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":3,"pistol":4,"smg":3,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"m26","smoke_count":0,"entity_count":1},{"unit_name":"mg_asst","display_name":"mg_asst [FIN]","icon":"rifle","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":4,"pistol":4,"smg":3,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":1}]},"squad_rifle_late_dp_con":{"name":"squad_rifle_late_dp_con","is_motorized":false,"vehicle":null,"units":[{"unit_name":"squadleader","display_name":"squadleader [FIN]","icon":"smg","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":3,"pistol":4,"smg":4,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"suomi_m31_sjr_stick","smoke_count":1,"entity_count":1},{"unit_name":"smg_drum","display_name":"smg_drum [FIN]","icon":"smg","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":3,"pistol":4,"smg":4,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"suomi_m31_sjr_drum","smoke_count":1,"entity_count":1},{"unit_name":"rifleman_sa","display_name":"rifleman_sa [FIN]","icon":"autorifle","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":4,"pistol":4,"smg":3,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"svt40","smoke_count":0,"entity_count":1},{"unit_name":"rifleman","display_name":"rifleman [FIN]","icon":"rifle","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":4,"pistol":4,"smg":3,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":4},{"unit_name":"mg_dp","display_name":"mg_dp [FIN]","icon":"mg","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":3,"pistol":4,"smg":3,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"dp_bipod","smoke_count":0,"entity_count":1},{"unit_name":"mg_dp_asst","display_name":"mg_dp_asst [FIN]","icon":"rifle","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":4,"pistol":4,"smg":3,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":1}]},"squad_rifle_late_dt_con":{"name":"squad_rifle_late_dt_con","is_motorized":false,"vehicle":null,"units":[{"unit_name":"squadleader","display_name":"squadleader [FIN]","icon":"smg","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":3,"pistol":4,"smg":4,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"suomi_m31_sjr_stick","smoke_count":1,"entity_count":1},{"unit_name":"smg_ppsh","display_name":"smg_ppsh [FIN]","icon":"smg","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":3,"pistol":4,"smg":4,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"ppsh41_drum","smoke_count":1,"entity_count":2},{"unit_name":"rifleman_sa","display_name":"rifleman_sa [FIN]","icon":"autorifle","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":4,"pistol":4,"smg":3,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"svt40","smoke_count":0,"entity_count":2},{"unit_name":"rifleman","display_name":"rifleman [FIN]","icon":"rifle","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":4,"pistol":4,"smg":3,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":2},{"unit_name":"mg_dt","display_name":"mg_dt [FIN]","icon":"mg","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":3,"pistol":4,"smg":3,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"dt_bipod","smoke_count":0,"entity_count":1},{"unit_name":"mg_dt_asst","display_name":"mg_dt_asst [FIN]","icon":"rifle","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":4,"pistol":4,"smg":3,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":1}]},"squad_penal_mid_con":{"name":"squad_penal_mid_con","is_motorized":false,"vehicle":null,"units":[{"unit_name":"penal_sl","display_name":"penal_sl [FIN]","icon":"smg","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":250,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":0.9,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":3,"pistol":4,"smg":4,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"suomi_m31_drum","smoke_count":0,"entity_count":1},{"unit_name":"penal_sa","display_name":"penal_sa [FIN]","icon":"autorifle","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":250,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":0.9,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":4,"pistol":4,"smg":3,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"svt38","smoke_count":0,"entity_count":1},{"unit_name":"penal_rifle","display_name":"penal_rifle [FIN]","icon":"rifle","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":250,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":0.9,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":4,"pistol":4,"smg":3,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"mosin_m27","smoke_count":0,"entity_count":5},{"unit_name":"penal_mg","display_name":"penal_mg [FIN]","icon":"mg","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":250,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":0.9,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":3,"pistol":4,"smg":3,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"dt_bipod","smoke_count":0,"entity_count":1},{"unit_name":"penal_mg_asst","display_name":"penal_mg_asst [FIN]","icon":"rifle","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":250,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":0.9,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":4,"pistol":4,"smg":3,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"mosin_m27","smoke_count":0,"entity_count":1}]},"squad_engineer_mid_con":{"name":"squad_engineer_mid_con","is_motorized":false,"vehicle":null,"units":[{"unit_name":"engineer_sl","display_name":"engineer_sl [FIN]","icon":"rifle","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":250,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":0.9,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":4,"pistol":4,"smg":3,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":1},{"unit_name":"engineer_rifle","display_name":"engineer_rifle [FIN]","icon":"rifle","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":250,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":0.9,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":4,"pistol":4,"smg":3,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":1},{"unit_name":"engineer_builder","display_name":"engineer_builder [FIN]","icon":"tech","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":250,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":0.9,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":4,"pistol":4,"smg":3,"mgun":3,"mgun_light":3},"special_perks":["engineer"],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":2},{"unit_name":"engineer_mine_at","display_name":"engineer_mine_at [FIN]","icon":"tech","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":250,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":0.9,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":4,"pistol":4,"smg":3,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":2},{"unit_name":"engineer_mine_ap","display_name":"engineer_mine_ap [FIN]","icon":"tech","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":250,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":0.9,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":4,"pistol":4,"smg":3,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":2},{"unit_name":"engineer_mine_d","display_name":"engineer_mine_d [FIN]","icon":"tech","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":250,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":0.9,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":4,"pistol":4,"smg":3,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":1}]},"squad_eng_flame_con":{"name":"squad_eng_flame_con","is_motorized":false,"vehicle":null,"units":[{"unit_name":"engineer_sl","display_name":"engineer_sl [FIN]","icon":"rifle","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":250,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":0.9,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":4,"pistol":4,"smg":3,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":1},{"unit_name":"engineer_rifle","display_name":"engineer_rifle [FIN]","icon":"rifle","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":250,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":0.9,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":4,"pistol":4,"smg":3,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":2},{"unit_name":"engineer_flamer","display_name":"engineer_flamer [FIN]","icon":"flamer","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":250,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":0.9,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":4,"pistol":4,"smg":3,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"roks_2_flame_thrower","smoke_count":0,"entity_count":2}]},"squad_antitank_late_con":{"name":"squad_antitank_late_con","is_motorized":false,"vehicle":null,"units":[{"unit_name":"squadleader","display_name":"squadleader [FIN]","icon":"smg","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":3,"pistol":4,"smg":4,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"suomi_m31_sjr_stick","smoke_count":1,"entity_count":1},{"unit_name":"antitank_ptrd","display_name":"antitank_ptrd [FIN]","icon":"atrifle","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":4,"pistol":4,"smg":3,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"ptrd","smoke_count":1,"entity_count":2},{"unit_name":"antitank_ptrd_asst","display_name":"antitank_ptrd_asst [FIN]","icon":"atrifle","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":4,"pistol":4,"smg":3,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":1,"entity_count":2},{"unit_name":"antitank_faust","display_name":"antitank_faust [FIN]","icon":"rifle","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":4,"pistol":4,"smg":3,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":4}]},"squad_vet_scout_mid_con":{"name":"squad_vet_scout_mid_con","is_motorized":false,"vehicle":null,"units":[{"unit_name":"vet_scout_sl","display_name":"vet_scout_sl [FIN]","icon":"smg","veterancy_level":5,"tier":"II","health_percent":150,"health_regeneration_percent":10,"stamina_percent":250,"stamina_regeneration_percent":100,"speed":1.1,"vision_range_m":125,"skills":{"rocketlauncher":3,"rifle":3,"pistol":4,"smg":4,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"suomi_m31_drum","smoke_count":0,"entity_count":1},{"unit_name":"vet_scout","display_name":"vet_scout [FIN]","icon":"rifle","veterancy_level":5,"tier":"II","health_percent":150,"health_regeneration_percent":10,"stamina_percent":250,"stamina_regeneration_percent":100,"speed":1.1,"vision_range_m":125,"skills":{"rocketlauncher":3,"rifle":4,"pistol":4,"smg":3,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":3}]},"squad_vet_rifle_mid_con":{"name":"squad_vet_rifle_mid_con","is_motorized":false,"vehicle":null,"units":[{"unit_name":"vet_squadleader","display_name":"vet_squadleader [FIN]","icon":"smg","veterancy_level":5,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":3,"pistol":4,"smg":4,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"suomi_m31_drum","smoke_count":0,"entity_count":1},{"unit_name":"vet_smg_drum","display_name":"vet_smg_drum [FIN]","icon":"smg","veterancy_level":5,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":3,"pistol":4,"smg":4,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"suomi_m31_drum","smoke_count":0,"entity_count":1},{"unit_name":"vet_rifleman_sa","display_name":"vet_rifleman_sa [FIN]","icon":"autorifle","veterancy_level":5,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":4,"pistol":4,"smg":3,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"svt38","smoke_count":0,"entity_count":1},{"unit_name":"vet_rifleman","display_name":"vet_rifleman [FIN]","icon":"rifle","veterancy_level":5,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":4,"pistol":4,"smg":3,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":4},{"unit_name":"vet_mg_dp","display_name":"vet_mg_dp [FIN]","icon":"mg","veterancy_level":5,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":3,"pistol":4,"smg":3,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"dp_bipod","smoke_count":0,"entity_count":1},{"unit_name":"vet_mg_dp_asst","display_name":"vet_mg_dp_asst [FIN]","icon":"rifle","veterancy_level":5,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":4,"pistol":4,"smg":3,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":1}]},"squad_vet_rifle_late_con":{"name":"squad_vet_rifle_late_con","is_motorized":false,"vehicle":null,"units":[{"unit_name":"vet_squadleader","display_name":"vet_squadleader [FIN]","icon":"smg","veterancy_level":5,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":3,"pistol":4,"smg":4,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"suomi_m31_sjr_drum","smoke_count":1,"entity_count":1},{"unit_name":"vet_smg_pps","display_name":"vet_smg_pps [FIN]","icon":"smg","veterancy_level":5,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":3,"pistol":4,"smg":4,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"pps43","smoke_count":1,"entity_count":1},{"unit_name":"vet_smg_ppsh","display_name":"vet_smg_ppsh [FIN]","icon":"smg","veterancy_level":5,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":3,"pistol":4,"smg":4,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"ppsh41_drum","smoke_count":1,"entity_count":1},{"unit_name":"vet_rifle_sa","display_name":"vet_rifle_sa [FIN]","icon":"autorifle","veterancy_level":5,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":4,"pistol":4,"smg":3,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"svt40","smoke_count":0,"entity_count":2},{"unit_name":"vet_rifle","display_name":"vet_rifle [FIN]","icon":"rifle","veterancy_level":5,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":4,"pistol":4,"smg":3,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":2},{"unit_name":"vet_mg_dp","display_name":"vet_mg_dp [FIN]","icon":"mg","veterancy_level":5,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":3,"pistol":4,"smg":3,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"dp_bipod","smoke_count":0,"entity_count":1},{"unit_name":"vet_mg_dp_asst","display_name":"vet_mg_dp_asst [FIN]","icon":"rifle","veterancy_level":5,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":4,"pistol":4,"smg":3,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":1}]},"squad_marksmen_mid_con":{"name":"squad_marksmen_mid_con","is_motorized":false,"vehicle":null,"units":[{"unit_name":"vet_squadleader","display_name":"vet_squadleader [FIN]","icon":"smg","veterancy_level":5,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":3,"pistol":4,"smg":4,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"suomi_m31_drum","smoke_count":0,"entity_count":1},{"unit_name":"marksman_sa","display_name":"marksman_sa [FIN]","icon":"rifle","veterancy_level":5,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":4,"pistol":4,"smg":3,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"svt38","smoke_count":0,"entity_count":2},{"unit_name":"marksman","display_name":"marksman [FIN]","icon":"rifle","veterancy_level":5,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":4,"pistol":4,"smg":3,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"mosin_m27","smoke_count":0,"entity_count":4},{"unit_name":"vet_mg_dp","display_name":"vet_mg_dp [FIN]","icon":"mg","veterancy_level":5,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":3,"pistol":4,"smg":3,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"dp_bipod","smoke_count":0,"entity_count":1},{"unit_name":"vet_mg_dp_asst","display_name":"vet_mg_dp_asst [FIN]","icon":"rifle","veterancy_level":5,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":4,"pistol":4,"smg":3,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":1}]},"squad_border_guard_early_con":{"name":"squad_border_guard_early_con","is_motorized":false,"vehicle":null,"units":[{"unit_name":"border_guard_sl","display_name":"border_guard_sl [Rajajääkäri]","icon":"rifle","veterancy_level":0,"tier":"III","health_percent":300,"health_regeneration_percent":200,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":0.9,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":5,"pistol":5,"smg":4,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"mosin_m27","smoke_count":0,"entity_count":1},{"unit_name":"border_guard_smg","display_name":"border_guard_smg [Rajajääkäri]","icon":"smg","veterancy_level":0,"tier":"III","health_percent":300,"health_regeneration_percent":200,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":0.9,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":4,"pistol":5,"smg":5,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"suomi_m31_drum","smoke_count":0,"entity_count":1},{"unit_name":"border_guard_rifle","display_name":"border_guard_rifle [Rajajääkäri]","icon":"rifle","veterancy_level":0,"tier":"III","health_percent":300,"health_regeneration_percent":200,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":0.9,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":5,"pistol":5,"smg":4,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"mosin_m27","smoke_count":0,"entity_count":8}]},"squad_cav_mid_con":{"name":"squad_cav_mid_con","is_motorized":false,"vehicle":null,"units":[{"unit_name":"cav_sl","display_name":"cav_sl [FIN]","icon":"smg","veterancy_level":0,"tier":"III","health_percent":300,"health_regeneration_percent":10,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":4,"pistol":5,"smg":5,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"suomi_m31_stick","smoke_count":0,"entity_count":1},{"unit_name":"cav_smg","display_name":"cav_smg [FIN]","icon":"smg","veterancy_level":0,"tier":"III","health_percent":300,"health_regeneration_percent":10,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":4,"pistol":5,"smg":5,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"suomi_m31_drum","smoke_count":0,"entity_count":1},{"unit_name":"cav_sa","display_name":"cav_sa [FIN]","icon":"autorifle","veterancy_level":0,"tier":"III","health_percent":300,"health_regeneration_percent":10,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":5,"pistol":5,"smg":4,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"svt40","smoke_count":0,"entity_count":1},{"unit_name":"cav_rifle","display_name":"cav_rifle [FIN]","icon":"rifle","veterancy_level":0,"tier":"III","health_percent":300,"health_regeneration_percent":10,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":5,"pistol":5,"smg":4,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":4},{"unit_name":"cav_mg","display_name":"cav_mg [FIN]","icon":"mg","veterancy_level":0,"tier":"III","health_percent":300,"health_regeneration_percent":10,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":4,"pistol":5,"smg":4,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"dp_bipod","smoke_count":0,"entity_count":1},{"unit_name":"cav_mg_asst","display_name":"cav_mg_asst [FIN]","icon":"rifle","veterancy_level":0,"tier":"III","health_percent":300,"health_regeneration_percent":10,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":5,"pistol":5,"smg":4,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":1}]},"squad_cav_late_con":{"name":"squad_cav_late_con","is_motorized":false,"vehicle":null,"units":[{"unit_name":"cav_sl","display_name":"cav_sl [FIN]","icon":"smg","veterancy_level":0,"tier":"III","health_percent":300,"health_regeneration_percent":10,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":4,"pistol":5,"smg":5,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"suomi_m31_sjr_stick","smoke_count":1,"entity_count":1},{"unit_name":"cav_smg","display_name":"cav_smg [FIN]","icon":"smg","veterancy_level":0,"tier":"III","health_percent":300,"health_regeneration_percent":10,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":4,"pistol":5,"smg":5,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"suomi_m31_sjr_drum","smoke_count":1,"entity_count":2},{"unit_name":"cav_sa","display_name":"cav_sa [FIN]","icon":"autorifle","veterancy_level":0,"tier":"III","health_percent":300,"health_regeneration_percent":10,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":5,"pistol":5,"smg":4,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"svt40","smoke_count":1,"entity_count":2},{"unit_name":"cav_rifle","display_name":"cav_rifle [FIN]","icon":"rifle","veterancy_level":0,"tier":"III","health_percent":300,"health_regeneration_percent":10,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":5,"pistol":5,"smg":4,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":1,"entity_count":2},{"unit_name":"cav_mg","display_name":"cav_mg [FIN]","icon":"mg","veterancy_level":0,"tier":"III","health_percent":300,"health_regeneration_percent":10,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":4,"pistol":5,"smg":4,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"dp_bipod","smoke_count":0,"entity_count":1},{"unit_name":"cav_mg_asst","display_name":"cav_mg_asst [FIN]","icon":"rifle","veterancy_level":0,"tier":"III","health_percent":300,"health_regeneration_percent":10,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":5,"pistol":5,"smg":4,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":1,"entity_count":1}]},"squad_swe_recon_early_con":{"name":"squad_swe_recon_early_con","is_motorized":false,"vehicle":null,"units":[{"unit_name":"swe_recon_sl","display_name":"swe_recon_sl [FIN]","icon":"rifle","veterancy_level":0,"tier":"III","health_percent":250,"health_regeneration_percent":10,"stamina_percent":325,"stamina_regeneration_percent":150,"speed":1.1,"vision_range_m":125,"skills":{"rocketlauncher":4,"rifle":5,"pistol":5,"smg":4,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"kiv_96","smoke_count":0,"entity_count":1},{"unit_name":"swe_recon_rifle","display_name":"swe_recon_rifle [FIN]","icon":"rifle","veterancy_level":0,"tier":"III","health_percent":250,"health_regeneration_percent":10,"stamina_percent":325,"stamina_regeneration_percent":150,"speed":1.1,"vision_range_m":125,"skills":{"rocketlauncher":4,"rifle":5,"pistol":5,"smg":4,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"kiv_96","smoke_count":0,"entity_count":5}]},"squad_swe_rifle_early_con":{"name":"squad_swe_rifle_early_con","is_motorized":false,"vehicle":null,"units":[{"unit_name":"swe_sl","display_name":"swe_sl [FIN]","icon":"rifle","veterancy_level":0,"tier":"III","health_percent":300,"health_regeneration_percent":10,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":5,"pistol":5,"smg":4,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"kiv_96","smoke_count":0,"entity_count":1},{"unit_name":"swe_sl_asst","display_name":"swe_sl_asst [FIN]","icon":"rifle","veterancy_level":0,"tier":"III","health_percent":300,"health_regeneration_percent":10,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":5,"pistol":5,"smg":4,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"kiv_96","smoke_count":0,"entity_count":1},{"unit_name":"swe_smg","display_name":"swe_smg [FIN]","icon":"smg","veterancy_level":0,"tier":"III","health_percent":300,"health_regeneration_percent":10,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":4,"pistol":5,"smg":5,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"suomi_m31_stick","smoke_count":0,"entity_count":1},{"unit_name":"swe_rifle","display_name":"swe_rifle [FIN]","icon":"rifle","veterancy_level":0,"tier":"III","health_percent":300,"health_regeneration_percent":10,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":5,"pistol":5,"smg":4,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"kiv_96","smoke_count":0,"entity_count":6},{"unit_name":"swe_mg","display_name":"swe_mg [FIN]","icon":"mg","veterancy_level":0,"tier":"III","health_percent":300,"health_regeneration_percent":10,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":4,"pistol":5,"smg":4,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"pk_21","smoke_count":0,"entity_count":1},{"unit_name":"swe_mg_asst","display_name":"swe_mg_asst [FIN]","icon":"rifle","veterancy_level":0,"tier":"III","health_percent":300,"health_regeneration_percent":10,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":5,"pistol":5,"smg":4,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"kiv_96","smoke_count":0,"entity_count":1}]},"squad_swe_jag_early_con":{"name":"squad_swe_jag_early_con","is_motorized":false,"vehicle":null,"units":[{"unit_name":"swe_jag_sl","display_name":"swe_jag_sl [FIN]","icon":"rifle","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"kiv_96","smoke_count":0,"entity_count":1},{"unit_name":"swe_jag_sl_asst","display_name":"swe_jag_sl_asst [FIN]","icon":"rifle","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"kiv_96","smoke_count":0,"entity_count":1},{"unit_name":"swe_jag_smg","display_name":"swe_jag_smg [FIN]","icon":"smg","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":5,"pistol":6,"smg":6,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"suomi_m31_stick","smoke_count":0,"entity_count":1},{"unit_name":"swe_jag_rifle","display_name":"swe_jag_rifle [FIN]","icon":"rifle","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"kiv_96","smoke_count":0,"entity_count":6},{"unit_name":"swe_jag_mg","display_name":"swe_jag_mg [FIN]","icon":"mg","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":5,"pistol":6,"smg":5,"mgun":6,"mgun_light":6},"special_perks":[],"primary_weapon":"pk_21","smoke_count":0,"entity_count":1},{"unit_name":"swe_jag_mg_asst","display_name":"swe_jag_mg_asst [FIN]","icon":"rifle","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":6,"mgun_light":6},"special_perks":[],"primary_weapon":"kiv_96","smoke_count":0,"entity_count":1}]},"squad_assault_mid_con":{"name":"squad_assault_mid_con","is_motorized":false,"vehicle":null,"units":[{"unit_name":"assault_squadleader","display_name":"assault_squadleader [FIN]","icon":"smg","veterancy_level":0,"tier":"III","health_percent":300,"health_regeneration_percent":10,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":4,"pistol":5,"smg":5,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"suomi_m31_drum","smoke_count":0,"entity_count":1},{"unit_name":"assault_smg_stick","display_name":"assault_smg_stick [FIN]","icon":"smg","veterancy_level":0,"tier":"III","health_percent":300,"health_regeneration_percent":10,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":4,"pistol":5,"smg":5,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"suomi_m31_stick","smoke_count":0,"entity_count":2},{"unit_name":"assault_sa","display_name":"assault_sa [FIN]","icon":"autorifle","veterancy_level":0,"tier":"III","health_percent":300,"health_regeneration_percent":10,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":5,"pistol":5,"smg":4,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"svt38","smoke_count":0,"entity_count":2},{"unit_name":"assault_rifle","display_name":"assault_rifle [FIN]","icon":"rifle","veterancy_level":0,"tier":"III","health_percent":300,"health_regeneration_percent":10,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":5,"pistol":5,"smg":4,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"mosin_m27","smoke_count":0,"entity_count":2},{"unit_name":"assault_mg","display_name":"assault_mg [FIN]","icon":"rifle","veterancy_level":0,"tier":"III","health_percent":300,"health_regeneration_percent":10,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":4,"pistol":5,"smg":4,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"chauchat","smoke_count":0,"entity_count":1},{"unit_name":"assault_mg_asst","display_name":"assault_mg_asst [FIN]","icon":"rifle","veterancy_level":0,"tier":"III","health_percent":300,"health_regeneration_percent":10,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":5,"pistol":5,"smg":4,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"mosin_m27","smoke_count":0,"entity_count":1}]},"squad_light_scout_mid_con":{"name":"squad_light_scout_mid_con","is_motorized":false,"vehicle":null,"units":[{"unit_name":"light_scout_sl","display_name":"light_scout_sl [FIN]","icon":"smg","veterancy_level":0,"tier":"III","health_percent":250,"health_regeneration_percent":10,"stamina_percent":325,"stamina_regeneration_percent":150,"speed":1.1,"vision_range_m":125,"skills":{"rocketlauncher":4,"rifle":4,"pistol":5,"smg":5,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"suomi_m31_drum","smoke_count":0,"entity_count":1},{"unit_name":"light_scout_smg","display_name":"light_scout_smg [FIN]","icon":"smg","veterancy_level":0,"tier":"III","health_percent":250,"health_regeneration_percent":10,"stamina_percent":325,"stamina_regeneration_percent":150,"speed":1.1,"vision_range_m":125,"skills":{"rocketlauncher":4,"rifle":4,"pistol":5,"smg":5,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"suomi_m31_drum","smoke_count":0,"entity_count":2},{"unit_name":"light_scout_sa_avt","display_name":"light_scout_sa_avt [FIN]","icon":"autorifle","veterancy_level":0,"tier":"III","health_percent":250,"health_regeneration_percent":10,"stamina_percent":325,"stamina_regeneration_percent":150,"speed":1.1,"vision_range_m":125,"skills":{"rocketlauncher":4,"rifle":5,"pistol":5,"smg":4,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"avt40","smoke_count":0,"entity_count":1},{"unit_name":"light_scout_sa_svt","display_name":"light_scout_sa_svt [FIN]","icon":"autorifle","veterancy_level":0,"tier":"III","health_percent":250,"health_regeneration_percent":10,"stamina_percent":325,"stamina_regeneration_percent":150,"speed":1.1,"vision_range_m":125,"skills":{"rocketlauncher":4,"rifle":5,"pistol":5,"smg":4,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"svt40","smoke_count":0,"entity_count":3},{"unit_name":"light_scout_rifle","display_name":"light_scout_rifle [FIN]","icon":"rifle","veterancy_level":0,"tier":"III","health_percent":250,"health_regeneration_percent":10,"stamina_percent":325,"stamina_regeneration_percent":150,"speed":1.1,"vision_range_m":125,"skills":{"rocketlauncher":4,"rifle":5,"pistol":5,"smg":4,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"mosin_m27","smoke_count":0,"entity_count":3}]},"squad_hq_lr_pio_mid_con":{"name":"squad_hq_lr_pio_mid_con","is_motorized":false,"vehicle":null,"units":[{"unit_name":"hq_lr_pio_sl","display_name":"hq_lr_pio_sl [FIN]","icon":"smg","veterancy_level":0,"tier":"III","health_percent":300,"health_regeneration_percent":200,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":0.9,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":4,"pistol":5,"smg":5,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"suomi_m31_stick","smoke_count":0,"entity_count":1},{"unit_name":"hq_lr_pio_smg","display_name":"hq_lr_pio_smg [FIN]","icon":"smg","veterancy_level":0,"tier":"III","health_percent":300,"health_regeneration_percent":200,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":0.9,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":4,"pistol":5,"smg":5,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"suomi_m31_stick","smoke_count":0,"entity_count":1},{"unit_name":"hq_lr_pio_sa","display_name":"hq_lr_pio_sa [FIN]","icon":"autorifle","veterancy_level":0,"tier":"III","health_percent":300,"health_regeneration_percent":200,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":0.9,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":5,"pistol":5,"smg":4,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"svt40","smoke_count":0,"entity_count":2},{"unit_name":"hq_lr_pio_rifle","display_name":"hq_lr_pio_rifle [FIN]","icon":"rifle","veterancy_level":0,"tier":"III","health_percent":300,"health_regeneration_percent":200,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":0.9,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":5,"pistol":5,"smg":4,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":1},{"unit_name":"hq_lr_pio_rifle_demo","display_name":"hq_lr_pio_rifle_demo [FIN]","icon":"rifle","veterancy_level":0,"tier":"III","health_percent":300,"health_regeneration_percent":200,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":0.9,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":5,"pistol":5,"smg":4,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":4}]},"squad_hq_lr_pio_late_con":{"name":"squad_hq_lr_pio_late_con","is_motorized":false,"vehicle":null,"units":[{"unit_name":"hq_lr_pio_sl","display_name":"hq_lr_pio_sl [FIN]","icon":"smg","veterancy_level":0,"tier":"III","health_percent":300,"health_regeneration_percent":200,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":0.9,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":4,"pistol":5,"smg":5,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"suomi_m31_sjr_stick","smoke_count":1,"entity_count":1},{"unit_name":"hq_lr_pio_smg","display_name":"hq_lr_pio_smg [FIN]","icon":"smg","veterancy_level":0,"tier":"III","health_percent":300,"health_regeneration_percent":200,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":0.9,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":4,"pistol":5,"smg":5,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"suomi_m31_sjr_stick","smoke_count":1,"entity_count":1},{"unit_name":"hq_lr_pio_sa","display_name":"hq_lr_pio_sa [FIN]","icon":"autorifle","veterancy_level":0,"tier":"III","health_percent":300,"health_regeneration_percent":200,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":0.9,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":5,"pistol":5,"smg":4,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"svt40","smoke_count":1,"entity_count":2},{"unit_name":"hq_lr_pio_rifle","display_name":"hq_lr_pio_rifle [FIN]","icon":"rifle","veterancy_level":0,"tier":"III","health_percent":300,"health_regeneration_percent":200,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":0.9,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":5,"pistol":5,"smg":4,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":1},{"unit_name":"hq_lr_pio_rifle_demo","display_name":"hq_lr_pio_rifle_demo [FIN]","icon":"rifle","veterancy_level":0,"tier":"III","health_percent":300,"health_regeneration_percent":200,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":0.9,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":5,"pistol":5,"smg":4,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":4}]},"squad_arm_pio_late_mot_con":{"name":"squad_arm_pio_late_mot_con","is_motorized":true,"vehicle":"volvo_127d","units":[{"unit_name":"arm_pio_rifle","display_name":"arm_pio_rifle [FIN]","icon":"rifle","veterancy_level":0,"tier":"III","health_percent":300,"health_regeneration_percent":200,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":0.9,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":5,"pistol":5,"smg":4,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":1},{"unit_name":"arm_pio_sl","display_name":"arm_pio_sl [FIN]","icon":"smg","veterancy_level":0,"tier":"III","health_percent":300,"health_regeneration_percent":200,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":0.9,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":4,"pistol":5,"smg":5,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"suomi_m31_sjr_drum","smoke_count":1,"entity_count":1},{"unit_name":"arm_pio_smg","display_name":"arm_pio_smg [FIN]","icon":"smg","veterancy_level":0,"tier":"III","health_percent":300,"health_regeneration_percent":200,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":0.9,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":4,"pistol":5,"smg":5,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"suomi_m31_sjr_stick","smoke_count":0,"entity_count":1},{"unit_name":"arm_pio_sa","display_name":"arm_pio_sa [FIN]","icon":"autorifle","veterancy_level":0,"tier":"III","health_percent":300,"health_regeneration_percent":200,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":0.9,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":5,"pistol":5,"smg":4,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"svt40","smoke_count":0,"entity_count":1},{"unit_name":"arm_pio_rifle","display_name":"arm_pio_rifle [FIN]","icon":"rifle","veterancy_level":0,"tier":"III","health_percent":300,"health_regeneration_percent":200,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":0.9,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":5,"pistol":5,"smg":4,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":3},{"unit_name":"arm_pio_rifle_pzf","display_name":"arm_pio_rifle_pzf [FIN]","icon":"rifle","veterancy_level":0,"tier":"III","health_percent":300,"health_regeneration_percent":200,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":0.9,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":5,"pistol":5,"smg":4,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":2},{"unit_name":"arm_pio_flamer","display_name":"arm_pio_flamer [FIN]","icon":"flamer","veterancy_level":0,"tier":"III","health_percent":300,"health_regeneration_percent":200,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":0.9,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":5,"pistol":5,"smg":4,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"roks_2_flame_thrower","smoke_count":0,"entity_count":1}]},"squad_vet_cav_mid_con":{"name":"squad_vet_cav_mid_con","is_motorized":false,"vehicle":null,"units":[{"unit_name":"vet_cav_sl","display_name":"vet_cav_sl [FIN]","icon":"smg","veterancy_level":5,"tier":"III","health_percent":300,"health_regeneration_percent":10,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":4,"pistol":5,"smg":5,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"suomi_m31_stick","smoke_count":0,"entity_count":1},{"unit_name":"vet_cav_smg","display_name":"vet_cav_smg [FIN]","icon":"smg","veterancy_level":5,"tier":"III","health_percent":300,"health_regeneration_percent":10,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":4,"pistol":5,"smg":5,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"suomi_m31_drum","smoke_count":0,"entity_count":1},{"unit_name":"vet_cav_sa","display_name":"vet_cav_sa [FIN]","icon":"autorifle","veterancy_level":5,"tier":"III","health_percent":300,"health_regeneration_percent":10,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":5,"pistol":5,"smg":4,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"svt40","smoke_count":0,"entity_count":2},{"unit_name":"vet_cav_rifle","display_name":"vet_cav_rifle [FIN]","icon":"rifle","veterancy_level":5,"tier":"III","health_percent":300,"health_regeneration_percent":10,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":5,"pistol":5,"smg":4,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":3},{"unit_name":"vet_cav_mg","display_name":"vet_cav_mg [FIN]","icon":"mg","veterancy_level":5,"tier":"III","health_percent":300,"health_regeneration_percent":10,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":4,"pistol":5,"smg":4,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"dp_bipod","smoke_count":0,"entity_count":1},{"unit_name":"vet_cav_mg_asst","display_name":"vet_cav_mg_asst [FIN]","icon":"rifle","veterancy_level":5,"tier":"III","health_percent":300,"health_regeneration_percent":10,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":5,"pistol":5,"smg":4,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":1}]},"squad_vet_cav_late_con":{"name":"squad_vet_cav_late_con","is_motorized":false,"vehicle":null,"units":[{"unit_name":"vet_cav_sl","display_name":"vet_cav_sl [FIN]","icon":"smg","veterancy_level":5,"tier":"III","health_percent":300,"health_regeneration_percent":10,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":4,"pistol":5,"smg":5,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"suomi_m31_sjr_stick","smoke_count":1,"entity_count":1},{"unit_name":"vet_cav_smg","display_name":"vet_cav_smg [FIN]","icon":"smg","veterancy_level":5,"tier":"III","health_percent":300,"health_regeneration_percent":10,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":4,"pistol":5,"smg":5,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"suomi_m31_sjr_drum","smoke_count":1,"entity_count":2},{"unit_name":"vet_cav_sa","display_name":"vet_cav_sa [FIN]","icon":"autorifle","veterancy_level":5,"tier":"III","health_percent":300,"health_regeneration_percent":10,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":5,"pistol":5,"smg":4,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"svt40","smoke_count":1,"entity_count":3},{"unit_name":"vet_cav_rifle","display_name":"vet_cav_rifle [FIN]","icon":"rifle","veterancy_level":5,"tier":"III","health_percent":300,"health_regeneration_percent":10,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":5,"pistol":5,"smg":4,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":1,"entity_count":1},{"unit_name":"vet_cav_mg","display_name":"vet_cav_mg [FIN]","icon":"mg","veterancy_level":5,"tier":"III","health_percent":300,"health_regeneration_percent":10,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":4,"pistol":5,"smg":4,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"dp_bipod","smoke_count":0,"entity_count":1},{"unit_name":"vet_cav_mg_asst","display_name":"vet_cav_mg_asst [FIN]","icon":"rifle","veterancy_level":5,"tier":"III","health_percent":300,"health_regeneration_percent":10,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":5,"pistol":5,"smg":4,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":1,"entity_count":1}]},"squad_elite_rifle_mid_con":{"name":"squad_elite_rifle_mid_con","is_motorized":false,"vehicle":null,"units":[{"unit_name":"elite_squadleader","display_name":"elite_squadleader [FIN]","icon":"smg","veterancy_level":5,"tier":"III","health_percent":300,"health_regeneration_percent":10,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":4,"pistol":5,"smg":5,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"suomi_m31_drum","smoke_count":0,"entity_count":1},{"unit_name":"elite_smg_drum","display_name":"elite_smg_drum [FIN]","icon":"smg","veterancy_level":5,"tier":"III","health_percent":300,"health_regeneration_percent":10,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":4,"pistol":5,"smg":5,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"suomi_m31_drum","smoke_count":0,"entity_count":1},{"unit_name":"elite_rifleman_sa","display_name":"elite_rifleman_sa [FIN]","icon":"autorifle","veterancy_level":5,"tier":"III","health_percent":300,"health_regeneration_percent":10,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":5,"pistol":5,"smg":4,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"svt38","smoke_count":0,"entity_count":2},{"unit_name":"elite_rifleman","display_name":"elite_rifleman [FIN]","icon":"rifle","veterancy_level":5,"tier":"III","health_percent":300,"health_regeneration_percent":10,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":5,"pistol":5,"smg":4,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":3},{"unit_name":"elite_mg_dp","display_name":"elite_mg_dp [FIN]","icon":"mg","veterancy_level":5,"tier":"III","health_percent":300,"health_regeneration_percent":10,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":4,"pistol":5,"smg":4,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"dp_bipod","smoke_count":0,"entity_count":1},{"unit_name":"elite_mg_dp_asst","display_name":"elite_mg_dp_asst [FIN]","icon":"rifle","veterancy_level":5,"tier":"III","health_percent":300,"health_regeneration_percent":10,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":5,"pistol":5,"smg":4,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":1}]},"squad_elite_rifle_late_con":{"name":"squad_elite_rifle_late_con","is_motorized":false,"vehicle":null,"units":[{"unit_name":"elite_squadleader","display_name":"elite_squadleader [FIN]","icon":"smg","veterancy_level":5,"tier":"III","health_percent":300,"health_regeneration_percent":10,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":4,"pistol":5,"smg":5,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"suomi_m31_sjr_drum","smoke_count":1,"entity_count":1},{"unit_name":"elite_smg_ppsh","display_name":"elite_smg_ppsh [FIN]","icon":"smg","veterancy_level":5,"tier":"III","health_percent":300,"health_regeneration_percent":10,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":4,"pistol":5,"smg":5,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"ppsh41_drum","smoke_count":1,"entity_count":2},{"unit_name":"elite_rifle_sa","display_name":"elite_rifle_sa [FIN]","icon":"autorifle","veterancy_level":5,"tier":"III","health_percent":300,"health_regeneration_percent":10,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":5,"pistol":5,"smg":4,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"svt40","smoke_count":0,"entity_count":3},{"unit_name":"elite_rifle","display_name":"elite_rifle [FIN]","icon":"rifle","veterancy_level":5,"tier":"III","health_percent":300,"health_regeneration_percent":10,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":5,"pistol":5,"smg":4,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":1},{"unit_name":"elite_mg_dp","display_name":"elite_mg_dp [FIN]","icon":"mg","veterancy_level":5,"tier":"III","health_percent":300,"health_regeneration_percent":10,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":4,"pistol":5,"smg":4,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"dp_bipod","smoke_count":0,"entity_count":1},{"unit_name":"elite_mg_dp_asst","display_name":"elite_mg_dp_asst [FIN]","icon":"rifle","veterancy_level":5,"tier":"III","health_percent":300,"health_regeneration_percent":10,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":5,"pistol":5,"smg":4,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":1}]},"squad_swe_mid_con":{"name":"squad_swe_mid_con","is_motorized":false,"vehicle":null,"units":[{"unit_name":"swe_sl","display_name":"swe_sl [FIN]","icon":"rifle","veterancy_level":5,"tier":"III","health_percent":300,"health_regeneration_percent":10,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":5,"pistol":5,"smg":4,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"kiv_96","smoke_count":0,"entity_count":1},{"unit_name":"swe_sl_asst","display_name":"swe_sl_asst [FIN]","icon":"rifle","veterancy_level":5,"tier":"III","health_percent":300,"health_regeneration_percent":10,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":5,"pistol":5,"smg":4,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"kiv_96","smoke_count":0,"entity_count":1},{"unit_name":"swe_smg","display_name":"swe_smg [FIN]","icon":"smg","veterancy_level":5,"tier":"III","health_percent":300,"health_regeneration_percent":10,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":4,"pistol":5,"smg":5,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"suomi_m31_stick","smoke_count":0,"entity_count":1},{"unit_name":"swe_rifle","display_name":"swe_rifle [FIN]","icon":"rifle","veterancy_level":5,"tier":"III","health_percent":300,"health_regeneration_percent":10,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":5,"pistol":5,"smg":4,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"kiv_96","smoke_count":0,"entity_count":4},{"unit_name":"swe_mg","display_name":"swe_mg [FIN]","icon":"mg","veterancy_level":5,"tier":"III","health_percent":300,"health_regeneration_percent":10,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":4,"pistol":5,"smg":4,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"pk_21","smoke_count":0,"entity_count":1},{"unit_name":"swe_mg_asst","display_name":"swe_mg_asst [FIN]","icon":"rifle","veterancy_level":5,"tier":"III","health_percent":300,"health_regeneration_percent":10,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":5,"pistol":5,"smg":4,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"kiv_96","smoke_count":0,"entity_count":1}]},"squad_swe_late_con":{"name":"squad_swe_late_con","is_motorized":false,"vehicle":null,"units":[{"unit_name":"swe_sl","display_name":"swe_sl [FIN]","icon":"smg","veterancy_level":5,"tier":"III","health_percent":300,"health_regeneration_percent":10,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":4,"pistol":5,"smg":5,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"suomi_m31_sjr_stick","smoke_count":1,"entity_count":1},{"unit_name":"swe_sl_asst","display_name":"swe_sl_asst [FIN]","icon":"smg","veterancy_level":5,"tier":"III","health_percent":300,"health_regeneration_percent":10,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":4,"pistol":5,"smg":5,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"suomi_m31_sjr_stick","smoke_count":1,"entity_count":1},{"unit_name":"swe_smg","display_name":"swe_smg [FIN]","icon":"smg","veterancy_level":5,"tier":"III","health_percent":300,"health_regeneration_percent":10,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":4,"pistol":5,"smg":5,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"suomi_m31_sjr_stick","smoke_count":1,"entity_count":1},{"unit_name":"swe_rifle_pzf","display_name":"swe_rifle_pzf [FIN]","icon":"rifle","veterancy_level":5,"tier":"III","health_percent":300,"health_regeneration_percent":10,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":5,"pistol":5,"smg":4,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"kiv_96","smoke_count":0,"entity_count":2},{"unit_name":"swe_rifle","display_name":"swe_rifle [FIN]","icon":"rifle","veterancy_level":5,"tier":"III","health_percent":300,"health_regeneration_percent":10,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":5,"pistol":5,"smg":4,"mgun":4,"mgun_light":4},"special_perks":[],"primary_weapon":"kiv_96","smoke_count":0,"entity_count":2},{"unit_name":"swe_mg","display_name":"swe_mg [FIN]","icon":"mg","veterancy_level":5,"tier":"III","health_percent":300,"health_regeneration_percent":10,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":4,"pistol":5,"smg":4,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"pk_21","smoke_count":0,"entity_count":1},{"unit_name":"swe_mg_asst","display_name":"swe_mg_asst [FIN]","icon":"rifle","veterancy_level":5,"tier":"III","health_percent":300,"health_regeneration_percent":10,"stamina_percent":200,"stamina_regeneration_percent":150,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":4,"rifle":5,"pistol":5,"smg":4,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"kiv_96","smoke_count":0,"entity_count":1}]},"squad_jag_scout_late_con":{"name":"squad_jag_scout_late_con","is_motorized":false,"vehicle":null,"units":[{"unit_name":"jag_scout_sl","display_name":"jag_scout_sl [FIN]","icon":"rifle","veterancy_level":0,"tier":"IV","health_percent":325,"health_regeneration_percent":10,"stamina_percent":425,"stamina_regeneration_percent":250,"speed":1.1,"vision_range_m":125,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"mosin_m27","smoke_count":1,"entity_count":1},{"unit_name":"jag_scout_sa","display_name":"jag_scout_sa [FIN]","icon":"autorifle","veterancy_level":0,"tier":"IV","health_percent":325,"health_regeneration_percent":10,"stamina_percent":425,"stamina_regeneration_percent":250,"speed":1.1,"vision_range_m":125,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"svt38","smoke_count":0,"entity_count":1},{"unit_name":"jag_scout_rifle","display_name":"jag_scout_rifle [FIN]","icon":"rifle","veterancy_level":0,"tier":"IV","health_percent":325,"health_regeneration_percent":10,"stamina_percent":425,"stamina_regeneration_percent":250,"speed":1.1,"vision_range_m":125,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"mosin_m27","smoke_count":0,"entity_count":2}]},"squad_jag_mid_con":{"name":"squad_jag_mid_con","is_motorized":false,"vehicle":null,"units":[{"unit_name":"jag_sl","display_name":"jag_sl [FIN]","icon":"smg","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":5,"pistol":6,"smg":6,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"suomi_m31_drum","smoke_count":0,"entity_count":1},{"unit_name":"jag_smg","display_name":"jag_smg [FIN]","icon":"smg","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":5,"pistol":6,"smg":6,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"suomi_m31_drum","smoke_count":0,"entity_count":2},{"unit_name":"jag_sa","display_name":"jag_sa [FIN]","icon":"autorifle","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"svt40","smoke_count":0,"entity_count":1},{"unit_name":"jag_rifle","display_name":"jag_rifle [FIN]","icon":"rifle","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":5}]},"squad_jag_late_con":{"name":"squad_jag_late_con","is_motorized":false,"vehicle":null,"units":[{"unit_name":"jag_sl","display_name":"jag_sl [FIN]","icon":"rifle","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":1,"entity_count":1},{"unit_name":"jag_smg","display_name":"jag_smg [FIN]","icon":"smg","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":5,"pistol":6,"smg":6,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"suomi_m31_sjr_drum","smoke_count":1,"entity_count":3},{"unit_name":"jag_sa","display_name":"jag_sa [FIN]","icon":"autorifle","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"svt40","smoke_count":1,"entity_count":2},{"unit_name":"jag_rifle","display_name":"jag_rifle [FIN]","icon":"rifle","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":1,"entity_count":2},{"unit_name":"jag_pzfaust","display_name":"jag_pzfaust [FIN]","icon":"rifle","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":1,"entity_count":1}]},"squad_jag_at_late_con":{"name":"squad_jag_at_late_con","is_motorized":true,"vehicle":"20mm_l39","units":[{"unit_name":"jag_sl_smg","display_name":"jag_sl_smg [FIN]","icon":"smg","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":5,"pistol":6,"smg":6,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"suomi_m31_sjr_drum","smoke_count":1,"entity_count":1},{"unit_name":"jag_smg_pzfaust","display_name":"jag_smg_pzfaust [FIN]","icon":"smg","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":5,"pistol":6,"smg":6,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"suomi_m31_sjr_drum","smoke_count":1,"entity_count":2},{"unit_name":"jag_pzfaust","display_name":"jag_pzfaust [FIN]","icon":"rifle","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":1,"entity_count":2},{"unit_name":"jag_pzs","display_name":"jag_pzs [FIN]","icon":"rifle","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"panzershreck_54 weapon","smoke_count":1,"entity_count":1},{"unit_name":"jag_pzs_asst","display_name":"jag_pzs_asst [FIN]","icon":"rifle","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":1,"entity_count":1}]},"squad_arm_jag_late_mot_con":{"name":"squad_arm_jag_late_mot_con","is_motorized":true,"vehicle":"volvo_127d","units":[{"unit_name":"arm_jag_rifle","display_name":"arm_jag_rifle [FIN]","icon":"rifle","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":1,"entity_count":1},{"unit_name":"arm_jag_sl","display_name":"arm_jag_sl [FIN]","icon":"smg","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":5,"pistol":6,"smg":6,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"suomi_m31_sjr_drum","smoke_count":1,"entity_count":1},{"unit_name":"arm_jag_smg","display_name":"arm_jag_smg [FIN]","icon":"smg","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":5,"pistol":6,"smg":6,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"suomi_m31_sjr_drum","smoke_count":1,"entity_count":2},{"unit_name":"arm_jag_avt","display_name":"arm_jag_avt [FIN]","icon":"autorifle","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"avt40","smoke_count":1,"entity_count":2},{"unit_name":"arm_jag_sa","display_name":"arm_jag_sa [FIN]","icon":"autorifle","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"svt40","smoke_count":1,"entity_count":1},{"unit_name":"arm_jag_rifle","display_name":"arm_jag_rifle [FIN]","icon":"rifle","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":1,"entity_count":3}]},"squad_border_jag_mid_con":{"name":"squad_border_jag_mid_con","is_motorized":false,"vehicle":null,"units":[{"unit_name":"border_jag_sl","display_name":"border_jag_sl [Rajajääkäri]","icon":"rifle","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":150,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":0.9,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":1},{"unit_name":"border_jag_smg","display_name":"border_jag_smg [Rajajääkäri]","icon":"smg","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":150,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":0.9,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":5,"pistol":6,"smg":6,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"suomi_m31_drum","smoke_count":0,"entity_count":2},{"unit_name":"border_jag_sa","display_name":"border_jag_sa [Rajajääkäri]","icon":"autorifle","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":150,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":0.9,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"svt40","smoke_count":0,"entity_count":2},{"unit_name":"border_jag_rifle","display_name":"border_jag_rifle [Rajajääkäri]","icon":"rifle","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":150,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":0.9,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":2},{"unit_name":"border_jag_mg","display_name":"border_jag_mg [Rajajääkäri]","icon":"mg","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":150,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":0.9,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":5,"pistol":6,"smg":5,"mgun":6,"mgun_light":6},"special_perks":[],"primary_weapon":"dp_bipod","smoke_count":0,"entity_count":1},{"unit_name":"border_jag_mg_asst","display_name":"border_jag_mg_asst [Rajajääkäri]","icon":"rifle","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":150,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":0.9,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":6,"mgun_light":6},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":1}]},"squad_border_jag_late_con":{"name":"squad_border_jag_late_con","is_motorized":false,"vehicle":null,"units":[{"unit_name":"border_jag_sl","display_name":"border_jag_sl [Rajajääkäri]","icon":"rifle","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":150,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":0.9,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":1,"entity_count":1},{"unit_name":"border_jag_smg","display_name":"border_jag_smg [Rajajääkäri]","icon":"smg","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":150,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":0.9,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":5,"pistol":6,"smg":6,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"suomi_m31_sjr_drum","smoke_count":1,"entity_count":2},{"unit_name":"border_jag_sa","display_name":"border_jag_sa [Rajajääkäri]","icon":"autorifle","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":150,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":0.9,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"svt40","smoke_count":1,"entity_count":2},{"unit_name":"border_jag_rifle_pzfaust","display_name":"border_jag_rifle_pzfaust [Rajajääkäri]","icon":"rifle","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":150,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":0.9,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":1,"entity_count":2},{"unit_name":"border_jag_mg","display_name":"border_jag_mg [Rajajääkäri]","icon":"mg","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":150,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":0.9,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":5,"pistol":6,"smg":5,"mgun":6,"mgun_light":6},"special_perks":[],"primary_weapon":"dp_bipod","smoke_count":0,"entity_count":1},{"unit_name":"border_jag_mg_asst","display_name":"border_jag_mg_asst [Rajajääkäri]","icon":"rifle","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":150,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":0.9,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":6,"mgun_light":6},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":1,"entity_count":1}]},"squad_border_jag_at_late_con":{"name":"squad_border_jag_at_late_con","is_motorized":false,"vehicle":null,"units":[{"unit_name":"border_jag_sl_smg","display_name":"border_jag_sl_smg [Rajajääkäri]","icon":"smg","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":150,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":0.9,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":5,"pistol":6,"smg":6,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"suomi_m31_sjr_drum","smoke_count":1,"entity_count":1},{"unit_name":"border_jag_smg","display_name":"border_jag_smg [Rajajääkäri]","icon":"smg","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":150,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":0.9,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":5,"pistol":6,"smg":6,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"suomi_m31_sjr_drum","smoke_count":1,"entity_count":1},{"unit_name":"border_jag_ptrd","display_name":"border_jag_ptrd [Rajajääkäri]","icon":"atrifle","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":150,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":0.9,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"ptrd","smoke_count":1,"entity_count":2},{"unit_name":"border_jag_ptrd_asst","display_name":"border_jag_ptrd_asst [Rajajääkäri]","icon":"rifle","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":150,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":0.9,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":1,"entity_count":2},{"unit_name":"border_jag_rifle_pzfaust","display_name":"border_jag_rifle_pzfaust [Rajajääkäri]","icon":"rifle","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":150,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":0.9,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":1,"entity_count":3}]},"squad_sissi_mid_con":{"name":"squad_sissi_mid_con","is_motorized":false,"vehicle":null,"units":[{"unit_name":"sissi_sl","display_name":"sissi_sl [FIN]","icon":"rifle","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":5,"mgun_light":5},"special_perks":["stealth"],"primary_weapon":"mosin_m27","smoke_count":0,"entity_count":1},{"unit_name":"sissi_smg_stick","display_name":"sissi_smg_stick [FIN]","icon":"smg","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":5,"pistol":6,"smg":6,"mgun":5,"mgun_light":5},"special_perks":["stealth"],"primary_weapon":"suomi_m31_stick","smoke_count":0,"entity_count":1},{"unit_name":"sissi_sa","display_name":"sissi_sa [FIN]","icon":"autorifle","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":5,"mgun_light":5},"special_perks":["stealth"],"primary_weapon":"svt38","smoke_count":0,"entity_count":2},{"unit_name":"sissi_rifle","display_name":"sissi_rifle [FIN]","icon":"rifle","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":5,"mgun_light":5},"special_perks":["stealth"],"primary_weapon":"mosin_m27","smoke_count":0,"entity_count":2},{"unit_name":"sissi_mg","display_name":"sissi_mg [FIN]","icon":"mg","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":5,"pistol":6,"smg":5,"mgun":6,"mgun_light":6},"special_perks":["stealth"],"primary_weapon":"m26","smoke_count":0,"entity_count":1},{"unit_name":"sissi_mg_asst","display_name":"sissi_mg_asst [FIN]","icon":"rifle","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":6,"mgun_light":6},"special_perks":["stealth"],"primary_weapon":"mosin_m27","smoke_count":0,"entity_count":1}]},"squad_hrr_cav_mid_con":{"name":"squad_hrr_cav_mid_con","is_motorized":false,"vehicle":null,"units":[{"unit_name":"hrr_cav_sl","display_name":"hrr_cav_sl [FIN]","icon":"smg","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":5,"pistol":6,"smg":6,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"suomi_m31_stick","smoke_count":0,"entity_count":1},{"unit_name":"hrr_cav_smg","display_name":"hrr_cav_smg [FIN]","icon":"smg","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":5,"pistol":6,"smg":6,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"suomi_m31_drum","smoke_count":0,"entity_count":2},{"unit_name":"hrr_cav_sa","display_name":"hrr_cav_sa [FIN]","icon":"autorifle","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"svt40","smoke_count":0,"entity_count":1},{"unit_name":"hrr_cav_rifle","display_name":"hrr_cav_rifle [FIN]","icon":"rifle","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":6},{"unit_name":"hrr_cav_mg","display_name":"hrr_cav_mg [FIN]","icon":"mg","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":5,"pistol":6,"smg":5,"mgun":6,"mgun_light":6},"special_perks":[],"primary_weapon":"m26","smoke_count":0,"entity_count":1},{"unit_name":"hrr_cav_mg_asst","display_name":"hrr_cav_mg_asst [FIN]","icon":"rifle","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":6,"mgun_light":6},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":1}]},"squad_hrr_cav_late_con":{"name":"squad_hrr_cav_late_con","is_motorized":false,"vehicle":null,"units":[{"unit_name":"hrr_cav_sl","display_name":"hrr_cav_sl [FIN]","icon":"smg","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":5,"pistol":6,"smg":6,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"suomi_m31_sjr_stick","smoke_count":1,"entity_count":1},{"unit_name":"hrr_cav_smg","display_name":"hrr_cav_smg [FIN]","icon":"smg","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":5,"pistol":6,"smg":6,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"suomi_m31_sjr_drum","smoke_count":1,"entity_count":4},{"unit_name":"hrr_cav_sa","display_name":"hrr_cav_sa [FIN]","icon":"autorifle","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"svt40","smoke_count":1,"entity_count":1},{"unit_name":"hrr_cav_rifle_pzf","display_name":"hrr_cav_rifle_pzf [FIN]","icon":"rifle","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":1,"entity_count":2},{"unit_name":"hrr_cav_rifle","display_name":"hrr_cav_rifle [FIN]","icon":"rifle","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":1,"entity_count":2},{"unit_name":"hrr_cav_mg","display_name":"hrr_cav_mg [FIN]","icon":"mg","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":5,"pistol":6,"smg":5,"mgun":6,"mgun_light":6},"special_perks":[],"primary_weapon":"m26","smoke_count":0,"entity_count":1},{"unit_name":"hrr_cav_mg_asst","display_name":"hrr_cav_mg_asst [FIN]","icon":"rifle","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":6,"mgun_light":6},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":1}]},"squad_hq_lr_mid_con":{"name":"squad_hq_lr_mid_con","is_motorized":false,"vehicle":null,"units":[{"unit_name":"hq_lr_sl","display_name":"hq_lr_sl [FIN]","icon":"smg","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":5,"pistol":6,"smg":6,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"suomi_m31_drum","smoke_count":0,"entity_count":1},{"unit_name":"hq_lr_smg_drum","display_name":"hq_lr_smg_drum [FIN]","icon":"smg","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":5,"pistol":6,"smg":6,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"suomi_m31_drum","smoke_count":0,"entity_count":2},{"unit_name":"hq_lr_smg_stick","display_name":"hq_lr_smg_stick [FIN]","icon":"smg","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":5,"pistol":6,"smg":6,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"suomi_m31_stick","smoke_count":0,"entity_count":5}]},"squad_hq_lr_recon_mid_con":{"name":"squad_hq_lr_recon_mid_con","is_motorized":false,"vehicle":null,"units":[{"unit_name":"hq_lr_recon_sl","display_name":"hq_lr_recon_sl [FIN]","icon":"rifle","veterancy_level":0,"tier":"IV","health_percent":325,"health_regeneration_percent":10,"stamina_percent":425,"stamina_regeneration_percent":250,"speed":1.1,"vision_range_m":125,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":1},{"unit_name":"hq_lr_recon_sa","display_name":"hq_lr_recon_sa [FIN]","icon":"autorifle","veterancy_level":0,"tier":"IV","health_percent":325,"health_regeneration_percent":10,"stamina_percent":425,"stamina_regeneration_percent":250,"speed":1.1,"vision_range_m":125,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"svt40","smoke_count":0,"entity_count":2},{"unit_name":"hq_lr_recon_rifle","display_name":"hq_lr_recon_rifle [FIN]","icon":"rifle","veterancy_level":0,"tier":"IV","health_percent":325,"health_regeneration_percent":10,"stamina_percent":425,"stamina_regeneration_percent":250,"speed":1.1,"vision_range_m":125,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":3}]},"squad_hq_lr_late_con":{"name":"squad_hq_lr_late_con","is_motorized":false,"vehicle":null,"units":[{"unit_name":"hq_lr_sl","display_name":"hq_lr_sl [FIN]","icon":"smg","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":5,"pistol":6,"smg":6,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"suomi_m31_sjr_drum","smoke_count":1,"entity_count":1},{"unit_name":"hq_lr_smg_drum","display_name":"hq_lr_smg_drum [FIN]","icon":"smg","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":5,"pistol":6,"smg":6,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"suomi_m31_sjr_drum","smoke_count":1,"entity_count":2},{"unit_name":"hq_lr_smg_stick","display_name":"hq_lr_smg_stick [FIN]","icon":"smg","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":5,"pistol":6,"smg":6,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"suomi_m31_sjr_stick","smoke_count":1,"entity_count":5}]},"squad_hq_lr_recon_late_con":{"name":"squad_hq_lr_recon_late_con","is_motorized":false,"vehicle":null,"units":[{"unit_name":"hq_lr_recon_sl","display_name":"hq_lr_recon_sl [FIN]","icon":"rifle","veterancy_level":0,"tier":"IV","health_percent":325,"health_regeneration_percent":10,"stamina_percent":425,"stamina_regeneration_percent":250,"speed":1.1,"vision_range_m":125,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":1,"entity_count":1},{"unit_name":"hq_lr_recon_sa","display_name":"hq_lr_recon_sa [FIN]","icon":"autorifle","veterancy_level":0,"tier":"IV","health_percent":325,"health_regeneration_percent":10,"stamina_percent":425,"stamina_regeneration_percent":250,"speed":1.1,"vision_range_m":125,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"svt40","smoke_count":1,"entity_count":2},{"unit_name":"hq_lr_recon_rifle","display_name":"hq_lr_recon_rifle [FIN]","icon":"rifle","veterancy_level":0,"tier":"IV","health_percent":325,"health_regeneration_percent":10,"stamina_percent":425,"stamina_regeneration_percent":250,"speed":1.1,"vision_range_m":125,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":1,"entity_count":3}]},"squad_vet_jag_mid_con":{"name":"squad_vet_jag_mid_con","is_motorized":false,"vehicle":null,"units":[{"unit_name":"vet_jag_sl","display_name":"vet_jag_sl [FIN]","icon":"rifle","veterancy_level":3,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"avt40","smoke_count":0,"entity_count":1},{"unit_name":"vet_jag_smg","display_name":"vet_jag_smg [FIN]","icon":"smg","veterancy_level":3,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":5,"pistol":6,"smg":6,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"suomi_m31_drum","smoke_count":0,"entity_count":2},{"unit_name":"vet_jag_sa","display_name":"vet_jag_sa [FIN]","icon":"autorifle","veterancy_level":3,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"svt40","smoke_count":0,"entity_count":1},{"unit_name":"vet_jag_rifle","display_name":"vet_jag_rifle [FIN]","icon":"rifle","veterancy_level":3,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":2},{"unit_name":"vet_jag_mg","display_name":"vet_jag_mg [FIN]","icon":"mg","veterancy_level":3,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":5,"pistol":6,"smg":5,"mgun":6,"mgun_light":6},"special_perks":[],"primary_weapon":"dp_bipod","smoke_count":0,"entity_count":1},{"unit_name":"vet_jag_mg_asst","display_name":"vet_jag_mg_asst [FIN]","icon":"rifle","veterancy_level":3,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":6,"mgun_light":6},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":1}]},"squad_vet_jag_late_con":{"name":"squad_vet_jag_late_con","is_motorized":false,"vehicle":null,"units":[{"unit_name":"vet_jag_sl","display_name":"vet_jag_sl [FIN]","icon":"smg","veterancy_level":3,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":5,"pistol":6,"smg":6,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"suomi_m31_sjr_drum","smoke_count":1,"entity_count":1},{"unit_name":"vet_jag_smg","display_name":"vet_jag_smg [FIN]","icon":"smg","veterancy_level":3,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":5,"pistol":6,"smg":6,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"suomi_m31_sjr_drum","smoke_count":0,"entity_count":2},{"unit_name":"vet_jag_sa","display_name":"vet_jag_sa [FIN]","icon":"autorifle","veterancy_level":3,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"svt40","smoke_count":0,"entity_count":1},{"unit_name":"vet_jag_rifle","display_name":"vet_jag_rifle [FIN]","icon":"rifle","veterancy_level":3,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":2},{"unit_name":"vet_jag_mg","display_name":"vet_jag_mg [FIN]","icon":"mg","veterancy_level":3,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":5,"pistol":6,"smg":5,"mgun":6,"mgun_light":6},"special_perks":[],"primary_weapon":"dp_bipod","smoke_count":0,"entity_count":1},{"unit_name":"vet_jag_mg_asst","display_name":"vet_jag_mg_asst [FIN]","icon":"rifle","veterancy_level":3,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":6,"mgun_light":6},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":1}]},"squad_jag_strike_mid_con":{"name":"squad_jag_strike_mid_con","is_motorized":false,"vehicle":null,"units":[{"unit_name":"vet_jag_strike_sl","display_name":"vet_jag_strike_sl [FIN]","icon":"smg","veterancy_level":3,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":5,"pistol":6,"smg":6,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"suomi_m31_drum","smoke_count":0,"entity_count":1},{"unit_name":"vet_jag_strike_sa","display_name":"vet_jag_strike_sa [FIN]","icon":"autorifle","veterancy_level":3,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"svt40","smoke_count":0,"entity_count":1},{"unit_name":"vet_jag_strike_smg","display_name":"vet_jag_strike_smg [FIN]","icon":"smg","veterancy_level":3,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":5,"pistol":6,"smg":6,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"suomi_m31_stick","smoke_count":0,"entity_count":3},{"unit_name":"vet_jag_strike_rifle","display_name":"vet_jag_strike_rifle [FIN]","icon":"rifle","veterancy_level":3,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":2},{"unit_name":"vet_jag_strike_rifle_demo","display_name":"vet_jag_strike_rifle_demo [FIN]","icon":"rifle","veterancy_level":3,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":2}]},"squad_jag_strike_late_con":{"name":"squad_jag_strike_late_con","is_motorized":false,"vehicle":null,"units":[{"unit_name":"vet_jag_strike_sl","display_name":"vet_jag_strike_sl [FIN]","icon":"smg","veterancy_level":3,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":5,"pistol":6,"smg":6,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"suomi_m31_sjr_drum","smoke_count":1,"entity_count":1},{"unit_name":"vet_jag_strike_smg","display_name":"vet_jag_strike_smg [FIN]","icon":"smg","veterancy_level":3,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":5,"pistol":6,"smg":6,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"suomi_m31_sjr_drum","smoke_count":1,"entity_count":6},{"unit_name":"vet_jag_strike_smg_demo","display_name":"vet_jag_strike_smg_demo [FIN]","icon":"smg","veterancy_level":3,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":5,"pistol":6,"smg":6,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"suomi_m31_sjr_drum","smoke_count":1,"entity_count":2}]},"squad_urr_cav_mid_con":{"name":"squad_urr_cav_mid_con","is_motorized":false,"vehicle":null,"units":[{"unit_name":"urr_cav_sl","display_name":"urr_cav_sl [FIN]","icon":"smg","veterancy_level":3,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":5,"pistol":6,"smg":6,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"suomi_m31_stick","smoke_count":0,"entity_count":1},{"unit_name":"urr_cav_smg","display_name":"urr_cav_smg [FIN]","icon":"smg","veterancy_level":3,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":5,"pistol":6,"smg":6,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"suomi_m31_drum","smoke_count":0,"entity_count":1},{"unit_name":"urr_cav_sa","display_name":"urr_cav_sa [FIN]","icon":"autorifle","veterancy_level":3,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"svt40","smoke_count":0,"entity_count":1},{"unit_name":"urr_cav_rifle","display_name":"urr_cav_rifle [FIN]","icon":"rifle","veterancy_level":3,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":5},{"unit_name":"urr_cav_mg","display_name":"urr_cav_mg [FIN]","icon":"mg","veterancy_level":3,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":5,"pistol":6,"smg":5,"mgun":6,"mgun_light":6},"special_perks":[],"primary_weapon":"dp_bipod","smoke_count":0,"entity_count":2},{"unit_name":"urr_cav_mg_asst","display_name":"urr_cav_mg_asst [FIN]","icon":"rifle","veterancy_level":3,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":6,"mgun_light":6},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":2}]},"squad_urr_cav_late_con":{"name":"squad_urr_cav_late_con","is_motorized":false,"vehicle":null,"units":[{"unit_name":"urr_cav_sl","display_name":"urr_cav_sl [FIN]","icon":"smg","veterancy_level":3,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":5,"pistol":6,"smg":6,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"suomi_m31_sjr_stick","smoke_count":1,"entity_count":1},{"unit_name":"urr_cav_smg","display_name":"urr_cav_smg [FIN]","icon":"smg","veterancy_level":3,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":5,"pistol":6,"smg":6,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"suomi_m31_sjr_drum","smoke_count":1,"entity_count":2},{"unit_name":"urr_cav_sa","display_name":"urr_cav_sa [FIN]","icon":"autorifle","veterancy_level":3,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"svt40","smoke_count":1,"entity_count":1},{"unit_name":"urr_cav_rifle_pzf","display_name":"urr_cav_rifle_pzf [FIN]","icon":"rifle","veterancy_level":3,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":1,"entity_count":2},{"unit_name":"urr_cav_rifle","display_name":"urr_cav_rifle [FIN]","icon":"rifle","veterancy_level":3,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":1,"entity_count":2},{"unit_name":"urr_cav_mg","display_name":"urr_cav_mg [FIN]","icon":"mg","veterancy_level":3,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":5,"pistol":6,"smg":5,"mgun":6,"mgun_light":6},"special_perks":[],"primary_weapon":"dp_bipod","smoke_count":0,"entity_count":2},{"unit_name":"urr_cav_mg_asst","display_name":"urr_cav_mg_asst [FIN]","icon":"rifle","veterancy_level":3,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":6,"mgun_light":6},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":2}]},"squad_hq_lr_jag_mid_con":{"name":"squad_hq_lr_jag_mid_con","is_motorized":false,"vehicle":null,"units":[{"unit_name":"hq_lr_jag_sl","display_name":"hq_lr_jag_sl [FIN]","icon":"smg","veterancy_level":3,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":5,"pistol":6,"smg":6,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"suomi_m31_drum","smoke_count":0,"entity_count":1},{"unit_name":"hq_lr_jag_smg","display_name":"hq_lr_jag_smg [FIN]","icon":"smg","veterancy_level":3,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":5,"pistol":6,"smg":6,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"suomi_m31_drum","smoke_count":0,"entity_count":3},{"unit_name":"hq_lr_jag_sa","display_name":"hq_lr_jag_sa [FIN]","icon":"autorifle","veterancy_level":3,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"svt40","smoke_count":0,"entity_count":2},{"unit_name":"hq_lr_jag_rifle","display_name":"hq_lr_jag_rifle [FIN]","icon":"rifle","veterancy_level":3,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":3}]},"squad_hq_lr_jag_late_con":{"name":"squad_hq_lr_jag_late_con","is_motorized":false,"vehicle":null,"units":[{"unit_name":"hq_lr_jag_sl","display_name":"hq_lr_jag_sl [FIN]","icon":"smg","veterancy_level":3,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":5,"pistol":6,"smg":6,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"suomi_m31_sjr_drum","smoke_count":1,"entity_count":1},{"unit_name":"hq_lr_jag_smg","display_name":"hq_lr_jag_smg [FIN]","icon":"smg","veterancy_level":3,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":5,"pistol":6,"smg":6,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"suomi_m31_sjr_drum","smoke_count":1,"entity_count":3},{"unit_name":"hq_lr_jag_avt","display_name":"hq_lr_jag_avt [FIN]","icon":"autorifle","veterancy_level":3,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"avt40","smoke_count":1,"entity_count":1},{"unit_name":"hq_lr_jag_sa","display_name":"hq_lr_jag_sa [FIN]","icon":"autorifle","veterancy_level":3,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"svt40","smoke_count":1,"entity_count":2},{"unit_name":"hq_lr_jag_rifle","display_name":"hq_lr_jag_rifle [FIN]","icon":"rifle","veterancy_level":3,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":5,"mgun_light":5},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":1,"entity_count":2}]},"single_at":{"name":"single_at","is_motorized":false,"vehicle":null,"units":[{"unit_name":"antitank_rifle","display_name":"antitank_rifle [FIN]","icon":"atrifle","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":4,"pistol":4,"smg":3,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"boys_mk1","smoke_count":0,"entity_count":1},{"unit_name":"antitank_asst","display_name":"antitank_asst [FIN]","icon":"rifle","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":4,"pistol":4,"smg":3,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"mosin_m27","smoke_count":0,"entity_count":1}]},"single_at_pzs_late_con":{"name":"single_at_pzs_late_con","is_motorized":false,"vehicle":null,"units":[{"unit_name":"smg_drum","display_name":"smg_drum [FIN]","icon":"smg","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":3,"pistol":4,"smg":4,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"suomi_m31_sjr_drum","smoke_count":1,"entity_count":1},{"unit_name":"antitank_pzs","display_name":"antitank_pzs [FIN]","icon":"bazooka","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":4,"pistol":4,"smg":3,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"panzershreck_54 weapon","smoke_count":1,"entity_count":1},{"unit_name":"antitank_pzs_ammo","display_name":"antitank_pzs_ammo [FIN]","icon":"rifle","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":4,"pistol":4,"smg":3,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":1}]},"squad_at_late_con":{"name":"squad_at_late_con","is_motorized":false,"vehicle":null,"units":[{"unit_name":"squadleader","display_name":"squadleader [FIN]","icon":"smg","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":3,"pistol":4,"smg":4,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"suomi_m31_sjr_stick","smoke_count":1,"entity_count":1},{"unit_name":"antitank_ptrd","display_name":"antitank_ptrd [FIN]","icon":"atrifle","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":4,"pistol":4,"smg":3,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"ptrd","smoke_count":1,"entity_count":2},{"unit_name":"antitank_rifle","display_name":"antitank_rifle [FIN]","icon":"atrifle","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":4,"pistol":4,"smg":3,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"boys_mk1","smoke_count":0,"entity_count":2},{"unit_name":"antitank_faust","display_name":"antitank_faust [FIN]","icon":"rifle","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":4,"pistol":4,"smg":3,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":2}]},"single_medic":{"name":"single_medic","is_motorized":false,"vehicle":null,"units":[{"unit_name":"medic","display_name":"medic [FIN]","icon":"tech","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":4,"pistol":4,"smg":3,"mgun":3,"mgun_light":3},"special_perks":["medic"],"primary_weapon":"lahti_l35","smoke_count":0,"entity_count":2}]},"single_ap_miner":{"name":"single_ap_miner","is_motorized":false,"vehicle":null,"units":[{"unit_name":"engineer_mine_ap","display_name":"engineer_mine_ap [FIN]","icon":"tech","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":250,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":0.9,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":4,"pistol":4,"smg":3,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":2}]},"single_at_miner":{"name":"single_at_miner","is_motorized":false,"vehicle":null,"units":[{"unit_name":"engineer_mine_at","display_name":"engineer_mine_at [FIN]","icon":"tech","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":250,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":0.9,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":4,"pistol":4,"smg":3,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":2}]},"single_engineer":{"name":"single_engineer","is_motorized":false,"vehicle":null,"units":[{"unit_name":"engineer_builder","display_name":"engineer_builder [FIN]","icon":"tech","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":250,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":0.9,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":4,"pistol":4,"smg":3,"mgun":3,"mgun_light":3},"special_perks":["engineer"],"primary_weapon":"mosin_m39","smoke_count":0,"entity_count":2}]},"single_flamer":{"name":"single_flamer","is_motorized":false,"vehicle":null,"units":[{"unit_name":"engineer_flamer","display_name":"engineer_flamer [FIN]","icon":"flamer","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":250,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":0.9,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":4,"pistol":4,"smg":3,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"roks_2_flame_thrower","smoke_count":0,"entity_count":1}]},"squad_heavy_engineer_mid_con":{"name":"squad_heavy_engineer_mid_con","is_motorized":false,"vehicle":null,"units":[{"unit_name":"engineer_heavy","display_name":"engineer_heavy [FIN]","icon":"tech","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":250,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":0.9,"vision_range_m":100,"skills":{"rocketlauncher":3,"rifle":4,"pistol":4,"smg":3,"mgun":3,"mgun_light":3},"special_perks":[],"primary_weapon":"pist_07","smoke_count":0,"entity_count":2}]},"single_sniper":{"name":"single_sniper","is_motorized":false,"vehicle":null,"units":[{"unit_name":"sniper","display_name":"sniper [FIN]","icon":"sniper","veterancy_level":0,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":125,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":5,"mgun_light":5},"special_perks":["stealth"],"primary_weapon":"mosin_m27_scope","smoke_count":0,"entity_count":1}]},"white_death_con":{"name":"white_death_con","is_motorized":false,"vehicle":null,"units":[{"unit_name":"white_death","display_name":"white_death [FIN]","icon":"rifle","veterancy_level":8,"tier":"IV","health_percent":375,"health_regeneration_percent":10,"stamina_percent":300,"stamina_regeneration_percent":250,"speed":1,"vision_range_m":125,"skills":{"rocketlauncher":5,"rifle":6,"pistol":6,"smg":5,"mgun":5,"mgun_light":5},"special_perks":["stealth"],"primary_weapon":"mosin_m27_ironsights","smoke_count":0,"entity_count":1}]},"single_tankman":{"name":"single_tankman","is_motorized":false,"vehicle":null,"units":[{"unit_name":"tank_commander","display_name":"tank_commander [FIN]","icon":"tech","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{},"special_perks":["tank_commander"],"primary_weapon":"lahti_l35","smoke_count":0,"entity_count":1},{"unit_name":"tankman","display_name":"tankman [FIN]","icon":"tech","veterancy_level":0,"tier":"II","health_percent":200,"health_regeneration_percent":10,"stamina_percent":125,"stamina_regeneration_percent":100,"speed":1,"vision_range_m":100,"skills":{},"special_perks":[],"primary_weapon":"lahti_l35","smoke_count":0,"entity_count":3}]}}}.squads;
+    const accuracyData = {
+  "pistol": {
+    "1": 0.8,
+    "2": 0.88,
+    "3": 0.97,
+    "4": 1.06,
+    "5": 1.17,
+    "6": 1.29,
+    "7": 1.42,
+    "8": 1.56
+  },
+  "rifle": {
+    "1": 0.65,
+    "2": 0.78,
+    "3": 0.94,
+    "4": 1.08,
+    "5": 1.24,
+    "6": 1.42,
+    "7": 1.57,
+    "8": 1.72
+  },
+  "smg": {
+    "1": 0.6,
+    "2": 0.75,
+    "3": 0.9,
+    "4": 1.08,
+    "5": 1.24,
+    "6": 1.43,
+    "7": 1.57,
+    "8": 1.73
+  },
+  "mgun_light": {
+    "1": 0.65,
+    "2": 0.81,
+    "3": 0.98,
+    "4": 1.17,
+    "5": 1.4,
+    "6": 1.61,
+    "7": 1.78,
+    "8": 1.95
+  },
+  "mgun": {
+    "1": 0.45,
+    "2": 0.56,
+    "3": 0.8,
+    "4": 0.96,
+    "5": 1.15,
+    "6": 1.32,
+    "7": 1.46,
+    "8": 1.6
+  },
+  "rocketlauncher": {
+    "1": 0.7,
+    "2": 0.8,
+    "3": 0.9,
+    "4": 1,
+    "5": 1.1,
+    "6": 1.15,
+    "7": 1.2,
+    "8": 1.25
+  }
+};
+
+    const container = document.getElementById('tree-container');
+    const modalOverlay = document.getElementById('modal-overlay');
+    const modalContent = document.getElementById('modal-content');
+    const closeBtn = document.getElementById('close-btn');
+
+    function getVetBonus(vetLevel) {
+        switch(vetLevel) {
+            case 0: return { hp: 0, stam: 0, hRegen: 0, sRegen: 0, wSkill: 0 };
+            case 1: return { hp: 0, stam: 0.10, hRegen: 0, sRegen: 0.10, wSkill: 0 };
+            case 2: return { hp: 0, stam: 0.15, hRegen: 0, sRegen: 0.15, wSkill: 1 };
+            case 3: return { hp: 0, stam: 0.20, hRegen: 0, sRegen: 0.20, wSkill: 1 };
+            case 4: return { hp: 0.10, stam: 0.25, hRegen: 1.00, sRegen: 0.25, wSkill: 2 };
+            case 5: return { hp: 0.15, stam: 0.30, hRegen: 2.00, sRegen: 0.30, wSkill: 2 };
+            case 6: return { hp: 0.20, stam: 0.35, hRegen: 3.00, sRegen: 0.35, wSkill: 3 };
+            case 7: return { hp: 0.25, stam: 0.40, hRegen: 4.00, sRegen: 0.40, wSkill: 3 };
+            case 8: return { hp: 0.25, stam: 0.50, hRegen: 5.00, sRegen: 0.50, wSkill: 4 };
+            default: return { hp: 0, stam: 0, hRegen: 0, sRegen: 0, wSkill: 0 };
+        }
+    }
+
+    function getScaledStats(u) {
+        const vet = u.veterancy_level || 0;
+        const bonus = getVetBonus(vet);
+        
+        let scaledHP = Math.floor(u.health_percent * (1 + bonus.hp));
+        let scaledHRegen = ((u.health_regeneration_percent / 100) * (1 + bonus.hRegen)).toFixed(1);
+        let scaledStam = Math.floor(u.stamina_percent * (1 + bonus.stam));
+        
+        let baseSRegen = (u.stamina_regeneration_percent / 100) * 3.0; 
+        let scaledSRegen = (baseSRegen * (1 + bonus.sRegen)).toFixed(1);
+
+        return {
+            hp: scaledHP,
+            hRegen: scaledHRegen,
+            stam: scaledStam,
+            sRegen: scaledSRegen,
+            wSkillBonus: bonus.wSkill
+        };
+    }
+    
+    const iconMap = {
+        'shotgun': 'shotgun.png',
+        'vehicle': 'vehicle.png',
+        'assault_rifle': 'assault_rifle.png',
+        'smg': 'smg.png',
+        'sniper': 'sniper.png',
+        'autorifle': 'autorifle.png',
+        'riflegrenade': 'riflegrenade.png',
+        'bazooka': 'bazooka.png',
+        'mg': 'mg.png',
+        'rifle': 'rifle.png',
+        'driver_crewman': 'driver_crewman.png',
+        'medic': 'medic.png',
+        'flamer': 'flamer.png',
+        'engineer': 'engineer.png',
+        'at_rifle': 'at_rifle.png',
+        'binocular': 'binocular.png',
+        'stealth_buff': 'stealth_buff.png',
+        'recon': 'recon.png',
+        'tech': 'engineer.png',
+        'stg': 'assault_rifle.png',
+        'atrifle': 'at_rifle.png'
+    };
+
+    function getSquad(name) {
+        if (!name) return null;
+        if (squadsData[name]) return squadsData[name];
+        
+        let match = squadsData['single_' + name];
+        if (match) return match;
+        
+        match = squadsData['squad_' + name + '_con'];
+        if (match) return match;
+        
+        const keys = Object.keys(squadsData);
+        for (let k of keys) {
+            if (k.toLowerCase().includes(name.toLowerCase())) {
+                return squadsData[k];
+            }
+        }
+        return null;
+    }
+
+    manualData.nodes.forEach(node => {
+        if (!node.text || node.text === 'Unknown') return;
+
+        const overlay = document.createElement('div');
+        overlay.className = 'node-overlay';
+        overlay.style.left = node.x + 'px';
+        overlay.style.top = node.y + 'px';
+        overlay.style.width = (node.width || node.w) + 'px';
+        overlay.style.height = (node.height || node.h) + 'px';
+        
+        overlay.title = node.text === 'link' ? 'Visit Yellow King on YouTube' : node.text;
+
+        const squad = getSquad(node.text);
+        if (squad) {
+            const badgesDiv = document.createElement('div');
+            badgesDiv.className = 'overlay-badges';
+            
+            const hasVision = squad.units.some(u => u.vision_range_m >= 125);
+            const hasStealth = squad.units.some(u => u.special_perks && u.special_perks.includes('stealth'));
+            const hasArmor = squad.units.some(u => u.special_perks && u.special_perks.includes('body_armor'));
+            const smokeCount = squad.units.reduce((sum, u) => sum + ((u.smoke_count || 0) * (u.entity_count || 1)), 0);
+            const hasOfficer = squad.units.some(u => u.unit_name.toLowerCase().includes('officer') || u.unit_name.toLowerCase().includes('commisar'));
+            const hasBazooka = squad.units.some(u => u.icon === 'bazooka' || u.unit_name.toLowerCase().includes('pzf') || u.unit_name.toLowerCase().includes('schreck') || u.unit_name.toLowerCase().includes('bazooka'));
+            const hasAtRifle = squad.units.some(u => u.icon === 'atrifle' || u.unit_name.toLowerCase().includes('at_rifle') || u.unit_name.toLowerCase().includes('ptrs'));
+            const hasMg = squad.units.some(u => u.icon === 'mg');
+            const hasVehicle = squad.vehicle != null || squad.is_motorized;
+            const totalUnits = squad.units.reduce((sum, u) => sum + (u.entity_count || 1), 0);
+
+            if (hasOfficer) {
+                badgesDiv.innerHTML += `<img src="icons_split/binocular.png" class="overlay-badge" title="Officer">`;
+            }
+            if (hasVision) {
+                badgesDiv.innerHTML += `<img src="icons_split/recon.png" class="overlay-badge" title="125m+ Vision">`;
+            }
+            if (hasStealth) {
+                badgesDiv.innerHTML += `<img src="icons_split/stealth_buff.png" class="overlay-badge" title="Stealth">`;
+            }
+            if (hasArmor) {
+                badgesDiv.innerHTML += `<img src="icons_split/armor.png" class="overlay-badge" title="Body Armor">`;
+            }
+            if (smokeCount > 3) {
+                badgesDiv.innerHTML += `<img src="icons_split/smoke.png" class="overlay-badge" title="Smoke Grenades (${Math.floor(smokeCount)})">`;
+            }
+            if (hasBazooka) {
+                badgesDiv.innerHTML += `<img src="icons_split/bazooka.png" class="overlay-badge" title="Anti-Tank">`;
+            } else if (hasAtRifle) {
+                badgesDiv.innerHTML += `<img src="icons_split/at_rifle.png" class="overlay-badge" title="Anti-Tank Rifle">`;
+            }
+            if (hasMg) {
+                badgesDiv.innerHTML += `<img src="icons_split/mg.png" class="overlay-badge" title="Machine Gun">`;
+            }
+            if (hasVehicle) {
+                badgesDiv.innerHTML += `<img src="icons_split/vehicle.png" class="overlay-badge" title="Vehicle">`;
+            }
+            
+            badgesDiv.innerHTML += `<div class="badge-text" style="color: gold; font-weight: bold;">${totalUnits}</div>`;
+
+            if (badgesDiv.innerHTML !== '') {
+                overlay.appendChild(badgesDiv);
+            }
+        }
+
+        overlay.addEventListener('click', () => {
+            if (node.text === 'link') {
+                window.open('https://www.youtube.com/@yellowking15', '_blank');
+            } else {
+                openSquadDetails(node.text);
+            }
+        });
+
+        container.appendChild(overlay);
+    });
+
+    function formatPerks(perksArr) {
+        if (!perksArr || perksArr.length === 0) return '-';
+        let html = '<ul class="perks-list">';
+        perksArr.forEach(p => {
+            html += `<li>${p.charAt(0).toUpperCase() + p.slice(1)}</li>`;
+        });
+        html += '</ul>';
+        return html;
+    }
+
+    function getIconUrl(iconName, unit) {
+        if (unit && unit.special_perks && unit.special_perks.includes('medic')) {
+            return 'icons_split/medic.png';
+        }
+        if (!iconName) return 'icons_split/rifle.png';
+        if (iconMap[iconName]) return 'icons_split/' + iconMap[iconName];
+        return 'icons_split/smg.png'; 
+    }
+
+    function formatTier(tierStr) {
+        if (!tierStr) return '-';
+        let romanTier = tierStr;
+        if (tierStr === 'civilian') romanTier = '0';
+        else {
+            const m = tierStr.match(/tier(d+)/);
+            if (m) {
+                const num = parseInt(m[1]);
+                const roman = ['I', 'II', 'III', 'IV', 'V'];
+                romanTier = roman[num - 1] || num;
+            }
+        }
+        return `<span style="color: gold; font-weight: bold;">${romanTier}</span>`;
+    }
+
+    function openSquadDetails(textKey) {
+        const squad = getSquad(textKey);
+        
+        if (!squad) {
+            modalContent.innerHTML = `<h2>${textKey}</h2><p>No squad data found in the JSON file. Please ensure the label matches the squad definition exactly.</p>`;
+            modalOverlay.classList.add('active');
+            return;
+        }
+
+        let html = '';
+
+        // Start Table Construction
+        html += `<table><thead><tr><th class="row-header">Property</th>`;
+        
+        squad.units.forEach(u => {
+            let iconSrc = getIconUrl(u.icon, u);
+            html += `<th><img src="${iconSrc}" class="icon-img" title="${u.icon}"><span class="weapon-name">${u.primary_weapon || '-'}</span></th>`;
+        });
+        html += `</tr></thead><tbody>`;
+
+        // Row 1: Quantity
+        html += `<tr><td class="row-header">Quantity</td>`;
+        squad.units.forEach(u => {
+            html += `<td>x${u.entity_count || 1}</td>`;
+        });
+        html += `</tr>`;
+
+        // Row 2: Tier
+        html += `<tr><td class="row-header">Tier</td>`;
+        squad.units.forEach(u => {
+            html += `<td>${formatTier(u.tier)}</td>`;
+        });
+        html += `</tr>`;
+
+        // Row 3: HP (Regen)
+        html += `<tr><td class="row-header">HP (Regen)</td>`;
+        squad.units.forEach(u => {
+            const stats = getScaledStats(u);
+            html += `<td>${stats.hp} <br><small style="color: #bbb;">(+${stats.hRegen})</small></td>`;
+        });
+        html += `</tr>`;
+
+        // Row 4: Stamina (Regen)
+        html += `<tr><td class="row-header">Stam (Regen)</td>`;
+        squad.units.forEach(u => {
+            const stats = getScaledStats(u);
+            html += `<td>${stats.stam} <br><small style="color: #bbb;">(+${stats.sRegen})</small></td>`;
+        });
+        html += `</tr>`;
+
+        // Row 5: Speed
+        html += `<tr><td class="row-header">Speed</td>`;
+        squad.units.forEach(u => {
+            html += `<td>${u.speed.toFixed(2)}x</td>`;
+        });
+        html += `</tr>`;
+
+        // Row 6: Vision
+        html += `<tr><td class="row-header">Vision</td>`;
+        squad.units.forEach(u => {
+            html += `<td>${u.vision_range_m}m</td>`;
+        });
+        html += `</tr>`;
+        
+        // Row 7: Smoke
+        html += `<tr><td class="row-header">Smoke Count</td>`;
+        squad.units.forEach(u => {
+            html += `<td>${(u.smoke_count || 0) * (u.entity_count || 1)}</td>`;
+        });
+        html += `</tr>`;
+
+        // Row 8: Armor
+        html += `<tr><td class="row-header">Armor</td>`;
+        squad.units.forEach(u => {
+            const hasBodyArmor = u.special_perks && u.special_perks.includes('body_armor');
+            html += `<td>${hasBodyArmor ? 'Y' : ''}</td>`;
+        });
+        html += `</tr>`;
+
+        // --- SKILL ROWS (Dynamic) ---
+        let allSkills = new Set();
+        squad.units.forEach(u => {
+            if (u.skills) {
+                Object.keys(u.skills).forEach(s => allSkills.add(s));
+            }
+        });
+        
+        const skillOrder = ['pistol', 'smg', 'rifle', 'mgun_light', 'mgun', 'rocketlauncher'];
+        const displaySkills = Array.from(allSkills).sort((a, b) => {
+            let ia = skillOrder.indexOf(a);
+            let ib = skillOrder.indexOf(b);
+            if (ia === -1) ia = 99;
+            if (ib === -1) ib = 99;
+            return ia - ib;
+        });
+
+        displaySkills.forEach(skill => {
+            let sLabel = skill.charAt(0).toUpperCase() + skill.slice(1);
+            if (skill === 'mgun_light') sLabel = 'Light MG';
+            if (skill === 'rocketlauncher') sLabel = 'Anti-Tank';
+            
+            html += `<tr><td class="row-header">${sLabel}</td>`;
+            squad.units.forEach(u => {
+                let lvl = (u.skills && u.skills[skill] !== undefined) ? u.skills[skill] : '-';
+                if (lvl !== '-') {
+                    const stats = getScaledStats(u);
+                    let finalSkill = lvl + stats.wSkillBonus;
+                    let acc = (accuracyData[skill] && accuracyData[skill][finalSkill]) ? accuracyData[skill][finalSkill].toFixed(2) : '-';
+                    if (acc !== '-') {
+                        let accColor = parseFloat(acc) < 1.0 ? '#fff' : '#4caf50';
+                        html += `<td>${finalSkill} <span style="color: ${accColor}; font-size: 0.9em;">(${acc})</span></td>`;
+                    } else {
+                        html += `<td>${finalSkill}</td>`;
+                    }
+                } else {
+                    html += `<td>-</td>`;
+                }
+            });
+            html += `</tr>`;
+        });
+
+        // Row Last: Perks
+        html += `<tr><td class="row-header">Perks</td>`;
+        squad.units.forEach(u => {
+            html += `<td>${formatPerks(u.special_perks)}</td>`;
+        });
+        html += `</tr>`;
+
+        html += `</tbody></table>`;
+
+        modalContent.innerHTML = html;
+        modalOverlay.classList.add('active');
+    }
+
+    closeBtn.addEventListener('click', () => {
+        modalOverlay.classList.remove('active');
+    });
+
+    modalOverlay.addEventListener('click', (e) => {
+        if (e.target === modalOverlay) {
+            modalOverlay.classList.remove('active');
+        }
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modalOverlay.classList.contains('active')) {
+            modalOverlay.classList.remove('active');
+        }
+    });
+
+</script>
+</body>
+</html>
