@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Interactive USA Research Tree</title>
+<style>
+    body {
+        margin: 0;
+        background-color: #111;
+        color: #ddd;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    #nav-buttons {
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        z-index: 2000;
+        display: flex;
+        gap: 10px;
+    }
+    .nav-btn {
+        padding: 10px 20px;
+        color: white;
+        text-decoration: none;
+        border-radius: 5px;
+        font-weight: bold;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.5);
+        transition: transform 0.1s, box-shadow 0.1s;
+    }
+    .nav-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 10px rgba(0,0,0,0.8);
+    }
+    #tree-container {
+        position: relative;
+        display: inline-block;
+        user-select: none; 
+    }
+    #bg-image {
+        display: block;
+        user-select: none;
+        -webkit-user-drag: none;
+    }
+    .node-overlay {
+        position: absolute;
+        cursor: pointer;
+        transition: background-color 0.2s, box-shadow 0.2s;
+        border-radius: 4px;
+        background-color: transparent;
+    }
+    .node-overlay:hover {
+        background-color: rgba(255, 255, 255, 0.15);
+        box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+    }
+    
+    .overlay-badges {
+        position: absolute;
+        top: -11px;
+        right: -25px;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        pointer-events: none;
+    }
+    .overlay-badge {
+        width: 28px;
+        height: 28px;
+        border-radius: 1px;
+        background: rgba(0,0,0,0.8);
+        border: 1px solid #555;
+        object-fit: contain;
+    }
+    .badge-text {
+        color: gold;
+        font-size: 16px;
+        line-height: 20px;
+        text-align: center;
+        font-weight: bold;
+        box-sizing: border-box;
+    }
+    
+    /* Modal Styles */
+    #modal-overlay {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0, 0, 0, 0.8);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+        backdrop-filter: blur(4px);
+    }
+    #modal-overlay.active {
+        display: flex;
+    }
+    #modal-box {
+        background: #222;
+        border: 1px solid #444;
+        border-radius: 8px;
+        padding: 20px;
+        max-width: 90%;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+        position: relative;
+    }
+    #close-btn {
+        position: absolute;
+        top: 10px; left: 10px;
+        background: #d32f2f;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        width: 28px;
+        height: 28px;
+        cursor: pointer;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        transition: background 0.2s;
+    }
+    #close-btn:hover { background: #b71c1c; }
+    
+    h2 { margin-top: 0; color: #fff; border-bottom: 1px solid #555; padding-bottom: 10px; padding-left: 35px; }
+    
+    table {
+        border-collapse: collapse;
+        width: 100%;
+        margin-top: 15px;
+        font-size: 14px;
+    }
+    th, td {
+        border: 1px solid #555;
+        padding: 8px 12px;
+        text-align: center;
+        vertical-align: middle;
+    }
+    th {
+        background: #333;
+        color: #fff;
+        position: sticky;
+        top: 0;
+    }
+    tr:nth-child(even) { background: #2a2a2a; }
+    tr:hover { background: #3a3a3a; }
+    
+    .row-header {
+        background: #333;
+        font-weight: bold;
+        color: #fff;
+        text-align: left;
+        width: 140px;
+    }
+    
+    .skills-list { text-align: left; margin: 0; padding-left: 15px; font-size: 12px; }
+    .perks-list { text-align: left; margin: 0; padding-left: 15px; font-size: 12px; color: #4caf50; }
+    .motorized-badge { display: inline-block; background: #1565c0; color: white; padding: 3px 6px; border-radius: 4px; font-size: 12px; margin-left: 10px; vertical-align: middle; }
+    
+    .icon-img {
+        max-height: 40px;
+        border-radius: 4px;
+    }
+    .weapon-name {
+        font-size: 11px;
+        color: #aaa;
+        display: block;
+        margin-top: 4px;
+    }
+</style>
+</head>
+<body>
+
+<div id="nav-buttons">
+    
+        <a href="index.html" class="nav-btn" style="background: #333; border: 2px solid #555;">Germany</a>
+        <a href="soviet_tree.html" class="nav-btn" style="background: #333; border: 2px solid #555;">USSR</a>
+        <a href="usa_tree.html" class="nav-btn" style="background: #1565c0; border: 2px solid #fff;">USA</a>
+        <a href="fin_tree.html" class="nav-btn" style="background: #333; border: 2px solid #555;">Finland</a>
+        <a href="eng_tree.html" class="nav-btn" style="background: #333; border: 2px solid #555;">Commonwealth</a>
+    
+</div>
+
+<div id="tree-container">
+    <img src="usa_research.jpg" id="bg-image">
+</div>
+
+<div id="modal-overlay">
+    <div id="modal-box">
+        <button id="close-btn">X</button>
+        <div id="modal-content"></div>
+    </div>
+</div>
+
+<script src="doota/data_nodes_usa.js"></script>
+<script src="doota/data_squads_usa.js"></script>
+<script src="doota/data_accuracy.js"></script>
+
+<script>
+    const manualData = window.manualData;
+    const squadsData = window.squadsData.squads || window.squadsData;
+    const accuracyData = window.accuracyData;
+
+    const container = document.getElementById('tree-container');
+    const modalOverlay = document.getElementById('modal-overlay');
+    const modalContent = document.getElementById('modal-content');
+    const closeBtn = document.getElementById('close-btn');
+
+    function getVetBonus(vetLevel) {
+        switch(vetLevel) {
+            case 0: return { hp: 0, stam: 0, hRegen: 0, sRegen: 0, wSkill: 0 };
+            case 1: return { hp: 0, stam: 0.10, hRegen: 0, sRegen: 0.10, wSkill: 0 };
+            case 2: return { hp: 0, stam: 0.15, hRegen: 0, sRegen: 0.15, wSkill: 1 };
+            case 3: return { hp: 0, stam: 0.20, hRegen: 0, sRegen: 0.20, wSkill: 1 };
+            case 4: return { hp: 0.10, stam: 0.25, hRegen: 1.00, sRegen: 0.25, wSkill: 2 };
+            case 5: return { hp: 0.15, stam: 0.30, hRegen: 2.00, sRegen: 0.30, wSkill: 2 };
+            case 6: return { hp: 0.20, stam: 0.35, hRegen: 3.00, sRegen: 0.35, wSkill: 3 };
+            case 7: return { hp: 0.25, stam: 0.40, hRegen: 4.00, sRegen: 0.40, wSkill: 3 };
+            case 8: return { hp: 0.25, stam: 0.50, hRegen: 5.00, sRegen: 0.50, wSkill: 4 };
+            default: return { hp: 0, stam: 0, hRegen: 0, sRegen: 0, wSkill: 0 };
+        }
+    }
+
+    function getScaledStats(u) {
+        const vet = u.veterancy_level || 0;
+        const bonus = getVetBonus(vet);
+        
+        let scaledHP = Math.floor(u.health_percent * (1 + bonus.hp));
+        let scaledHRegen = ((u.health_regeneration_percent / 100) * (1 + bonus.hRegen)).toFixed(1);
+        let scaledStam = Math.floor(u.stamina_percent * (1 + bonus.stam));
+        
+        let baseSRegen = (u.stamina_regeneration_percent / 100) * 3.0; 
+        let scaledSRegen = (baseSRegen * (1 + bonus.sRegen)).toFixed(1);
+
+        return {
+            hp: scaledHP,
+            hRegen: scaledHRegen,
+            stam: scaledStam,
+            sRegen: scaledSRegen,
+            wSkillBonus: bonus.wSkill
+        };
+    }
+    
+    const iconMap = {
+        'shotgun': 'shotgun.png',
+        'vehicle': 'vehicle.png',
+        'assault_rifle': 'assault_rifle.png',
+        'smg': 'smg.png',
+        'sniper': 'sniper.png',
+        'autorifle': 'autorifle.png',
+        'riflegrenade': 'riflegrenade.png',
+        'bazooka': 'bazooka.png',
+        'mg': 'mg.png',
+        'rifle': 'rifle.png',
+        'driver_crewman': 'driver_crewman.png',
+        'medic': 'medic.png',
+        'flamer': 'flamer.png',
+        'engineer': 'engineer.png',
+        'at_rifle': 'at_rifle.png',
+        'binocular': 'binocular.png',
+        'stealth_buff': 'stealth_buff.png',
+        'recon': 'recon.png',
+        'tech': 'engineer.png',
+        'stg': 'assault_rifle.png',
+        'atrifle': 'at_rifle.png'
+    };
+
+    function getSquad(name) {
+        if (!name) return null;
+        if (squadsData[name]) return squadsData[name];
+        
+        let match = squadsData['single_' + name];
+        if (match) return match;
+        
+        match = squadsData['squad_' + name + '_con'];
+        if (match) return match;
+        
+        const keys = Object.keys(squadsData);
+        for (let k of keys) {
+            if (k.toLowerCase().includes(name.toLowerCase())) {
+                return squadsData[k];
+            }
+        }
+        return null;
+    }
+
+    manualData.nodes.forEach(node => {
+        if (!node.text || node.text === 'Unknown') return;
+
+        const overlay = document.createElement('div');
+        overlay.className = 'node-overlay';
+        overlay.style.left = node.x + 'px';
+        overlay.style.top = node.y + 'px';
+        overlay.style.width = (node.width || node.w) + 'px';
+        overlay.style.height = (node.height || node.h) + 'px';
+        
+        const squad = getSquad(node.text);
+        
+        if (node.text === 'link') {
+            overlay.title = 'Visit Yellow King on YouTube';
+        } else if (squad && squad.localized_name) {
+            overlay.title = squad.localized_name;
+        } else {
+            overlay.title = node.text;
+        }
+        if (squad) {
+            const badgesDiv = document.createElement('div');
+            badgesDiv.className = 'overlay-badges';
+            
+            const hasVision = squad.units.some(u => u.vision_range_m >= 125);
+            const hasStealth = squad.units.some(u => u.special_perks && u.special_perks.includes('stealth'));
+            const hasArmor = squad.units.some(u => u.special_perks && u.special_perks.includes('body_armor'));
+            const smokeCount = squad.units.reduce((sum, u) => sum + ((u.smoke_count || 0) * (u.entity_count || 1)), 0);
+            
+            const hasShovel = squad.units.some(u => u.has_shovel);
+            const atGrenadeCount = squad.units.reduce((sum, u) => sum + ((u.at_grenade_count || 0) * (u.entity_count || 1)), 0);
+
+            const hasOfficer = squad.units.some(u => u.unit_name.toLowerCase().includes('officer') || u.unit_name.toLowerCase().includes('commisar'));
+            const hasBazooka = squad.units.some(u => u.icon === 'bazooka' || u.unit_name.toLowerCase().includes('pzf') || u.unit_name.toLowerCase().includes('schreck') || u.unit_name.toLowerCase().includes('bazooka'));
+            const hasAtRifle = squad.units.some(u => u.icon === 'atrifle' || u.unit_name.toLowerCase().includes('at_rifle') || u.unit_name.toLowerCase().includes('ptrs'));
+            const hasMg = squad.units.some(u => u.icon === 'mg');
+            const hasVehicle = squad.vehicle != null || squad.is_motorized;
+            const totalUnits = squad.units.reduce((sum, u) => sum + (u.entity_count || 1), 0);
+
+            if (hasOfficer) {
+                badgesDiv.innerHTML += `<img src="icons_split/binocular.png" class="overlay-badge" title="Officer">`;
+            }
+            if (hasVision) {
+                badgesDiv.innerHTML += `<img src="icons_split/recon.png" class="overlay-badge" title="Recon">`;
+            }
+            if (hasStealth) {
+                badgesDiv.innerHTML += `<img src="icons_split/stealth_buff.png" class="overlay-badge" title="Stealth">`;
+            }
+            if (hasArmor) {
+                badgesDiv.innerHTML += `<img src="icons_split/armor.png" class="overlay-badge" title="Armor">`;
+            }
+            if (atGrenadeCount > 0) {
+                badgesDiv.innerHTML += `<img src="icons_split/atgrenade.png" class="overlay-badge" title="AT Grenade">`;
+            }
+            if (smokeCount > 3) {
+                badgesDiv.innerHTML += `<img src="icons_split/smoke.png" class="overlay-badge" title="Smoke">`;
+            }
+            if (hasBazooka) {
+                badgesDiv.innerHTML += `<img src="icons_split/bazooka.png" class="overlay-badge" title="Anti-Tank">`;
+            } else if (hasAtRifle) {
+                badgesDiv.innerHTML += `<img src="icons_split/at_rifle.png" class="overlay-badge" title="AT Rifle">`;
+            }
+            if (hasMg) {
+                badgesDiv.innerHTML += `<img src="icons_split/mg.png" class="overlay-badge" title="Machine Gun">`;
+            }
+            if (hasVehicle) {
+                badgesDiv.innerHTML += `<img src="icons_split/vehicle.png" class="overlay-badge" title="Vehicle">`;
+            }
+            if (hasShovel) {
+                badgesDiv.innerHTML += `<img src="icons_split/shovel.png" class="overlay-badge" title="Shovel">`;
+            }
+            
+            let totalHealth = 0;
+            squad.units.forEach(u => {
+                const stats = getScaledStats(u);
+                totalHealth += stats.hp * (u.entity_count || 1);
+            });
+            const avgHealth = totalUnits > 0 ? totalHealth / totalUnits : 0;
+            
+            let countColor = 'white';
+            if (avgHealth >= 300) {
+                countColor = '#4caf50'; // Green
+            } else if (avgHealth > 200) {
+                countColor = 'gold'; // Yellow
+            }
+
+            badgesDiv.innerHTML += `<div class="badge-text" style="color: ${countColor}; font-weight: bold;">${totalUnits}</div>`;
+
+            if (badgesDiv.innerHTML !== '') {
+                overlay.appendChild(badgesDiv);
+            }
+        }
+
+        overlay.addEventListener('click', () => {
+            if (node.text === 'link') {
+                window.open('https://youtu.be/_1ihY-VYJkU', '_blank');
+            } else {
+                openSquadDetails(node.text);
+            }
+        });
+
+        container.appendChild(overlay);
+    });
+
+    function formatPerks(perksArr) {
+        if (!perksArr || perksArr.length === 0) return '-';
+        let html = '<ul class="perks-list">';
+        perksArr.forEach(p => {
+            html += `<li>${p.charAt(0).toUpperCase() + p.slice(1)}</li>`;
+        });
+        html += '</ul>';
+        return html;
+    }
+
+    function getIconUrl(iconName, unit) {
+        if (unit && unit.special_perks && unit.special_perks.includes('medic')) {
+            return 'icons_split/medic.png';
+        }
+        if (unit && unit.primary_weapon) {
+            const pw = unit.primary_weapon.toLowerCase();
+            if (pw.includes('binocular')) return 'icons_split/binocular.png';
+            if (pw.includes('svt')) return 'icons_split/autorifle.png';
+            if (pw.includes('panzerfaust')) return 'icons_split/bazooka.png';
+        }
+        if (!iconName) return 'icons_split/rifle.png';
+        if (iconMap[iconName]) return 'icons_split/' + iconMap[iconName];
+        return 'icons_split/smg.png'; 
+    }
+
+    function formatTier(tierStr) {
+        if (!tierStr) return '-';
+        let romanTier = tierStr;
+        if (tierStr === 'civilian') romanTier = '0';
+        else {
+            const m = tierStr.match(/tier(d+)/);
+            if (m) {
+                const num = parseInt(m[1]);
+                const roman = ['I', 'II', 'III', 'IV', 'V'];
+                romanTier = roman[num - 1] || num;
+            }
+        }
+        return `<span style="color: gold; font-weight: bold;">${romanTier}</span>`;
+    }
+
+    function formatWeaponName(name) {
+        if (!name || name === '-') return '-';
+        return name.replace(' grenade', '').split('_').map(word => {
+            return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+        }).join(' ');
+    }
+    function openSquadDetails(textKey) {
+        const squad = getSquad(textKey);
+        
+        if (!squad) {
+            modalContent.innerHTML = `<h2>${textKey}</h2><p>No squad data found in the JSON file. Please ensure the label matches the squad definition exactly.</p>`;
+            modalOverlay.classList.add('active');
+            return;
+        }
+
+        let html = '';
+        
+        const displayName = squad.localized_name || squad.name || textKey;
+        html += `<h2>${displayName}</h2>`;
+
+        // Start Table Construction
+        html += `<table><thead><tr><th class="row-header">Property</th>`;
+        
+        squad.units.forEach(u => {
+            let iconSrc = getIconUrl(u.icon, u);
+            html += `<th><img src="${iconSrc}" class="icon-img" title="${u.icon}"><span class="weapon-name">${formatWeaponName(u.primary_weapon)}</span></th>`;
+        });
+        html += `</tr></thead><tbody>`;
+
+        // Row 1: Quantity
+        html += `<tr><td class="row-header">Quantity</td>`;
+        squad.units.forEach(u => {
+            html += `<td>x${u.entity_count || 1}</td>`;
+        });
+        html += `</tr>`;
+
+        // Row 2: Tier
+        html += `<tr><td class="row-header">Tier</td>`;
+        squad.units.forEach(u => {
+            html += `<td>${formatTier(u.tier)}</td>`;
+        });
+        html += `</tr>`;
+
+        // Row 3: HP (Regen)
+        html += `<tr><td class="row-header">HP (Regen)</td>`;
+        squad.units.forEach(u => {
+            const stats = getScaledStats(u);
+            html += `<td>${stats.hp} <br><small style="color: #bbb;">(+${stats.hRegen})</small></td>`;
+        });
+        html += `</tr>`;
+
+        // Row 4: Stamina (Regen)
+        html += `<tr><td class="row-header">Stam (Regen)</td>`;
+        squad.units.forEach(u => {
+            const stats = getScaledStats(u);
+            html += `<td>${stats.stam} <br><small style="color: #bbb;">(+${stats.sRegen})</small></td>`;
+        });
+        html += `</tr>`;
+
+        // Row 5: Speed
+        html += `<tr><td class="row-header">Speed</td>`;
+        squad.units.forEach(u => {
+            html += `<td>${u.speed.toFixed(2)}x</td>`;
+        });
+        html += `</tr>`;
+
+        // Row 6: Vision
+        html += `<tr><td class="row-header">Vision</td>`;
+        squad.units.forEach(u => {
+            html += `<td>${u.vision_range_m}m</td>`;
+        });
+        html += `</tr>`;
+        
+        // Row 7: Smoke
+        html += `<tr><td class="row-header">Smoke Count</td>`;
+        squad.units.forEach(u => {
+            html += `<td>${(u.smoke_count || 0) * (u.entity_count || 1)}</td>`;
+        });
+        html += `</tr>`;
+
+        // Row 8: Armor
+        html += `<tr><td class="row-header">Armor</td>`;
+        squad.units.forEach(u => {
+            const hasBodyArmor = u.special_perks && u.special_perks.includes('body_armor');
+            html += `<td>${hasBodyArmor ? 'Y' : ''}</td>`;
+        });
+        html += `</tr>`;
+
+        // Row 9: Shovel
+        html += `<tr><td class="row-header">Shovel</td>`;
+        squad.units.forEach(u => {
+            html += `<td>${u.has_shovel ? 'Y' : ''}</td>`;
+        });
+        html += `</tr>`;
+
+        // Row 10: AT Grenades
+        html += `<tr><td class="row-header">AT Grenades</td>`;
+        squad.units.forEach(u => {
+            if (u.at_grenade_count && u.at_grenade_count > 0) {
+                html += `<td>${u.at_grenade_count}<br><small style="color: #bbb;">${formatWeaponName(u.at_grenade_name)}</small></td>`;
+            } else {
+                html += `<td></td>`;
+            }
+        });
+        html += `</tr>`;
+
+        // Row 11: AP Grenades
+        html += `<tr><td class="row-header">AP Grenades</td>`;
+        squad.units.forEach(u => {
+            if (u.ap_grenade_count && u.ap_grenade_count > 0) {
+                html += `<td>${u.ap_grenade_count}<br><small style="color: #bbb;">${formatWeaponName(u.ap_grenade_name)}</small></td>`;
+            } else {
+                html += `<td></td>`;
+            }
+        });
+        html += `</tr>`;
+
+        // Row 12: Extra Ammo
+        html += `<tr><td class="row-header">Extra Ammo</td>`;
+        squad.units.forEach(u => {
+            if (u.extra_ammo_count && u.extra_ammo_count > 0) {
+                html += `<td>${u.extra_ammo_count}<br><small style="color: #bbb;">${formatWeaponName(u.extra_ammo_name)}</small></td>`;
+            } else {
+                html += `<td></td>`;
+            }
+        });
+        html += `</tr>`;
+
+        // --- SKILL ROWS (Dynamic) ---
+        let allSkills = new Set();
+        squad.units.forEach(u => {
+            if (u.skills) {
+                Object.keys(u.skills).forEach(s => allSkills.add(s));
+            }
+        });
+        
+        const skillOrder = ['pistol', 'smg', 'rifle', 'mgun_light', 'mgun', 'rocketlauncher'];
+        const displaySkills = Array.from(allSkills).sort((a, b) => {
+            let ia = skillOrder.indexOf(a);
+            let ib = skillOrder.indexOf(b);
+            if (ia === -1) ia = 99;
+            if (ib === -1) ib = 99;
+            return ia - ib;
+        });
+
+        displaySkills.forEach(skill => {
+            let sLabel = skill.charAt(0).toUpperCase() + skill.slice(1);
+            if (skill === 'mgun_light') sLabel = 'Light MG';
+            if (skill === 'rocketlauncher') sLabel = 'Anti-Tank';
+            
+            html += `<tr><td class="row-header">${sLabel}</td>`;
+            squad.units.forEach(u => {
+                let lvl = (u.skills && u.skills[skill] !== undefined) ? u.skills[skill] : '-';
+                if (lvl !== '-') {
+                    const stats = getScaledStats(u);
+                    let finalSkill = lvl + stats.wSkillBonus;
+                    let acc = (accuracyData[skill] && accuracyData[skill][finalSkill]) ? accuracyData[skill][finalSkill].toFixed(2) : '-';
+                    if (acc !== '-') {
+                        let accColor = parseFloat(acc) < 1.0 ? '#fff' : '#4caf50';
+                        html += `<td>${finalSkill} <span style="color: ${accColor}; font-size: 0.9em;">(${acc})</span></td>`;
+                    } else {
+                        html += `<td>${finalSkill}</td>`;
+                    }
+                } else {
+                    html += `<td>-</td>`;
+                }
+            });
+            html += `</tr>`;
+        });
+
+        // Row Last: Perks
+        html += `<tr><td class="row-header">Perks</td>`;
+        squad.units.forEach(u => {
+            html += `<td>${formatPerks(u.special_perks)}</td>`;
+        });
+        html += `</tr>`;
+
+        html += `</tbody></table>`;
+
+        modalContent.innerHTML = html;
+        modalOverlay.classList.add('active');
+    }
+
+    closeBtn.addEventListener('click', () => {
+        modalOverlay.classList.remove('active');
+    });
+
+    modalOverlay.addEventListener('click', (e) => {
+        if (e.target === modalOverlay) {
+            modalOverlay.classList.remove('active');
+        }
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modalOverlay.classList.contains('active')) {
+            modalOverlay.classList.remove('active');
+        }
+    });
+
+    // --- DRAG TO SCROLL LOGIC ---
+    let isDragging = false;
+    let startX, startY, scrollLeft, scrollTop;
+    let dragThreshold = 5; 
+    let moved = false;
+
+    // Global reset to ensure clicked flag doesn't get stuck
+    window.addEventListener('mousedown', () => {
+        moved = false;
+    });
+
+    container.addEventListener('mousedown', (e) => {
+        if (e.target !== container && e.target !== document.getElementById('bg-image')) return;
+        
+        e.preventDefault(); // Prevent text selection and ghost dragging
+        isDragging = true;
+        moved = false;
+        container.style.cursor = 'grabbing';
+        
+        // Use clientX/Y for viewport-relative coords to avoid feedback loops when scrolling document
+        startX = e.clientX;
+        startY = e.clientY;
+        scrollLeft = window.scrollX;
+        scrollTop = window.scrollY;
+    });
+
+    window.addEventListener('mouseup', () => {
+        isDragging = false;
+        container.style.cursor = 'default';
+    });
+
+    window.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        
+        const walkX = (e.clientX - startX);
+        const walkY = (e.clientY - startY);
+
+        if (Math.abs(walkX) > dragThreshold || Math.abs(walkY) > dragThreshold) {
+            moved = true;
+            window.scrollTo(scrollLeft - walkX, scrollTop - walkY);
+        }
+    });
+
+    // Intercept clicks ONLY if we actually dragged, and ONLY for the tree area
+    window.addEventListener('click', (e) => {
+        // If the click is on a navigation button, let it through immediately
+        if (e.target.closest('#nav-buttons')) {
+            moved = false;
+            return;
+        }
+
+        if (moved) {
+            e.preventDefault();
+            e.stopPropagation();
+            moved = false; 
+        }
+    }, true);
+
+</script>
+</body>
+</html>
