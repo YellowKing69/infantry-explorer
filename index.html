@@ -317,8 +317,8 @@
             const atGrenadeCount = squad.units.reduce((sum, u) => sum + ((u.at_grenade_count || 0) * (u.entity_count || 1)), 0);
 
             const hasOfficer = squad.units.some(u => u.unit_name.toLowerCase().includes('officer') || u.unit_name.toLowerCase().includes('commisar'));
-            const hasBazooka = squad.units.some(u => u.icon === 'bazooka' || u.unit_name.toLowerCase().includes('pzf') || u.unit_name.toLowerCase().includes('schreck') || u.unit_name.toLowerCase().includes('bazooka'));
-            const hasAtRifle = squad.units.some(u => u.icon === 'atrifle' || u.unit_name.toLowerCase().includes('at_rifle') || u.unit_name.toLowerCase().includes('ptrs'));
+            const hasBazooka = squad.units.some(u => u.icon === 'bazooka' || u.unit_name.toLowerCase().includes('pzf') || u.unit_name.toLowerCase().includes('schreck') || u.unit_name.toLowerCase().includes('bazooka') || (u.primary_weapon && u.primary_weapon.toLowerCase().includes('piat')));
+            const hasAtRifle = squad.units.some(u => u.icon === 'atrifle' || u.unit_name.toLowerCase().includes('at_rifle') || u.unit_name.toLowerCase().includes('ptrs') || (u.primary_weapon && u.primary_weapon.toLowerCase().includes('boys')));
             const hasMg = squad.units.some(u => u.icon === 'mg');
             const hasVehicle = squad.vehicle != null || squad.is_motorized;
             const totalUnits = squad.units.reduce((sum, u) => sum + (u.entity_count || 1), 0);
@@ -338,7 +338,7 @@
             if (atGrenadeCount > 0) {
                 badgesDiv.innerHTML += `<img src="icons_split/atgrenade.png" class="overlay-badge" title="AT Grenade">`;
             }
-            if (smokeCount > 3) {
+            if (smokeCount > 0) {
                 badgesDiv.innerHTML += `<img src="icons_split/smoke.png" class="overlay-badge" title="Smoke">`;
             }
             if (hasBazooka) {
@@ -406,7 +406,8 @@
             const pw = unit.primary_weapon.toLowerCase();
             if (pw.includes('binocular')) return 'icons_split/binocular.png';
             if (pw.includes('svt')) return 'icons_split/autorifle.png';
-            if (pw.includes('panzerfaust')) return 'icons_split/bazooka.png';
+            if (pw.includes('panzerfaust') || pw.includes('piat')) return 'icons_split/bazooka.png';
+            if (pw.includes('enfield_no1_mk3_grenade_launcher')) return 'icons_split/riflegrenade.png';
         }
         if (!iconName) return 'icons_split/rifle.png';
         if (iconMap[iconName]) return 'icons_split/' + iconMap[iconName];
